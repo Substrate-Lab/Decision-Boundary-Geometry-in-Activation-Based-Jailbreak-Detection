@@ -4,6 +4,8 @@ Power-Diagram Decision Boundaries for Jailbreak Detection - NeurIPS Interpretabi
 Power-Diagram Decision Boundaries for Jailbreak Detection
 Experimental Design Document
 
+COPY PASTED FROM https://docs.google.com/document/d/1vaH21Lwiu2GTkCWdYvV40_pdSF88aGA7ssnBOq1Y3h0/edit?tab=t.0
+
 1. The Problem
 Deployed language models are guarded by refusal behavior: when a prompt requests something harmful, the model is supposed to decline. Jailbreaks defeat this — a rephrased, encoded, or role-played version of a harmful request slips past the refusal and the model complies. Detecting jailbreaks reliably, and knowing how confident that detection is, remains an open safety problem.
 Most current detection approaches fall into two buckets, each with a gap:
