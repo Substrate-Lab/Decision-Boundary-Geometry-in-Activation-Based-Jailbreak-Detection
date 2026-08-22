@@ -1,4 +1,4 @@
-# Power-Diagram-Decision-Boundaries-for-Jailbreak-Detection
+# Decision-Boundary Geometry in Activation-Based Jailbreak Detection
 Power-Diagram Decision Boundaries for Jailbreak Detection - NeurIPS Interpretability for Discovery
 
 Power-Diagram Decision Boundaries for Jailbreak Detection
