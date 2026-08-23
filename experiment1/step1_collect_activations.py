@@ -23,10 +23,14 @@ import json
 import random
 import sys
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import analytics
 
 MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"
 LAYERS = [1, 8, 16, 24, 32]
@@ -123,6 +127,17 @@ def set_seeds(seed: int) -> None:
 		torch.cuda.manual_seed_all(seed)
 
 
+# Reset CUDA peak-memory counters so analytics reflect only this run, guarding the torch import.
+def reset_peak_memory_stats() -> None:
+	try:
+		import torch
+
+		if torch.cuda.is_available():
+			torch.cuda.reset_peak_memory_stats()
+	except Exception as error:
+		print(f"could not reset peak memory stats: {error}", file=sys.stderr)
+
+
 # Load the tokenizer and model, optionally with 4-bit nf4 quantization.
 def load_model_and_tokenizer(config: Config):
 	import torch
@@ -163,8 +178,8 @@ def is_harmful_prompt(category: str) -> bool:
 	return category in {"harmful", "toxic"}
 
 
-# Load every dataset that will load, then return a seed-shuffled balanced list of records.
-def gather_prompts(sample_per_class: int, seed: int) -> list:
+# Load every dataset that will load, then return a seed-shuffled balanced list plus the failed names.
+def gather_prompts(sample_per_class: int, seed: int) -> tuple[list, list[str]]:
 	loaders = import_dataset_loaders()
 	harmful: list = []
 	benign: list = []
@@ -202,20 +217,21 @@ def gather_prompts(sample_per_class: int, seed: int) -> list:
 		f"gathered {len(harmful)} harmful + {len(benign)} benign = {len(selected)} prompts",
 		file=sys.stderr,
 	)
-	return selected
+	return selected, failed
 
 
 # Render a single user prompt through the model's chat template with a generation prompt.
 def format_prompt(tokenizer, prompt: str):
 	import torch
 
-	input_ids = tokenizer.apply_chat_template(
+	encoded = tokenizer.apply_chat_template(
 		[{"role": "user", "content": prompt}],
 		add_generation_prompt=True,
 		tokenize=True,
 		return_tensors="pt",
+		return_dict=True,
 	)
-	return input_ids.to(torch.long)
+	return encoded["input_ids"].to(torch.long)
 
 
 # Forward pass with hidden states; hidden_states[0] is the embedding layer so index L is block L output.
@@ -371,14 +387,41 @@ def main() -> None:
 		load_in_4bit=not args.no_4bit,
 	)
 
+	run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+	timings: dict = {}
+
 	set_seeds(config.seed)
-	records = gather_prompts(config.sample_per_class, config.seed)
-	model, tokenizer = load_model_and_tokenizer(config)
+	with analytics.timed(timings, "gather_prompts"):
+		records, datasets_skipped = gather_prompts(config.sample_per_class, config.seed)
+	with analytics.timed(timings, "load_model"):
+		model, tokenizer = load_model_and_tokenizer(config)
 	config.layers = validate_layers(config.layers, model.config.num_hidden_layers)
-	activations_by_layer, label_rows, over_refusal_skipped = run_collection(
-		model, tokenizer, records, config
-	)
+
+	reset_peak_memory_stats()
+	with analytics.timed(timings, "run_collection"):
+		activations_by_layer, label_rows, over_refusal_skipped = run_collection(
+			model, tokenizer, records, config
+		)
 	save_outputs(activations_by_layer, label_rows, over_refusal_skipped, config)
+
+	run_record = {
+		"run_id": run_id,
+		"model_id": config.model_id,
+		"sample_per_class": config.sample_per_class,
+		"load_in_4bit": config.load_in_4bit,
+		"layers": config.layers,
+		"seed": config.seed,
+		"environment": analytics.capture_environment(),
+		"timings": timings,
+		"labels_summary": analytics.summarize_labels(label_rows),
+		"activation_geometry": analytics.activation_geometry(activations_by_layer, label_rows),
+		"gpu": analytics.gpu_memory_stats(),
+		"datasets_skipped": datasets_skipped,
+		"over_refusal_skipped": over_refusal_skipped,
+	}
+	analytics.write_run_report(DATA_DIR, run_record)
+	analytics.print_summary(run_record)
+
 	print(
 		f"done: {len(label_rows)} examples, {over_refusal_skipped} over-refusals skipped",
 		file=sys.stderr,
