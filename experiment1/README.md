@@ -27,6 +27,32 @@ Prompts are drawn from the project's four datasets — SORRY-Bench,
 WildJailbreak, ToxicChat, and Aegis 2.0 — loaded through
 `../dataset/load_datasets.py`.
 
+## Sampling design (why the collection is built the way it is)
+
+Because the classes come from the model's behaviour, three problems have to be
+handled at collection time:
+
+- **Contamination.** WildJailbreak has ~261k rows and would otherwise swamp the
+  smaller corpora. We therefore draw **equal quotas from each dataset**
+  (stratified round-robin), so no single corpus dominates the sample.
+- **Class imbalance.** The model decides Refusal vs. Jailbreak, and a compliant
+  model refuses only a minority of harmful prompts. We over-sample the harmful
+  side (`--harmful-pool`), label everything behaviourally, then **downsample
+  every class to an equal size** (`--per-class`) so Refusal = Jailbreak = Benign.
+- **Throughput.** Generation is **batched** (`--batch-size`) with left padding,
+  and we generate only a short response (`--max-new-tokens`, default 24) — enough
+  to detect a refusal — which keeps the GPU busy and the run short.
+
+An optional **safety system prompt** (`--safety-prompt`, off by default) makes
+the model refuse harmful requests more readily. It raises the refusal rate and
+balances the classes, but it shifts the activations and redefines a "jailbreak"
+as a prompt that beats a safety-instructed model — a modelling decision, so it
+is left off unless explicitly enabled.
+
+Both the balanced set (`labels.csv` + `activations_layer{L}.npy`, used by later
+steps) and the full pre-balance set (`labels_full.csv` +
+`activations_full_layer{L}.npy`, for provenance) are written.
+
 ## The three steps
 
 The pipeline is three sequential, self-contained scripts. Each reads the
