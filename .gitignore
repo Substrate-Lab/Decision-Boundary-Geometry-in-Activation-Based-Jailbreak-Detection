@@ -1,2 +1,13 @@
 # Local Claude context / private notes — never commit
 CLAUDE.local.md
+
+# Python virtual environment and caches — never commit
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Generated experiment outputs (activations, PNS scores, figures, HF cache)
+experiment1/data/
+experiment1/figures/
+dataset/data/
