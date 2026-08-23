@@ -36,9 +36,9 @@ PCA_DIMS = 10
 SEED = 0
 
 CLASS_COLORS = {
-	"Refusal": "#2f6b4f",
-	"Jailbreak": "#8c2f2f",
-	"Benign": "#8a8a80",
+	"Refusal": "#1ecb96",
+	"Jailbreak": "#e5484d",
+	"Benign": "#f5c518",
 }
 
 
@@ -208,23 +208,45 @@ def pad_to_three(values):
 	return padded
 
 
-# Draw side-by-side 3D scatter of raw PCA geometry versus PNS polar geometry, colored by class.
+# Normalize each row of a 3-column array to unit length so the points lie on the unit sphere.
+def to_unit_rows(values):
+	norms = np.linalg.norm(values, axis=1, keepdims=True)
+	norms[norms == 0] = 1.0
+	return values / norms
+
+
+# Draw a faint wireframe unit sphere onto a 3D axis as a globe reference.
+def draw_wireframe_sphere(ax):
+	longitude = np.linspace(0, 2 * np.pi, 24)
+	latitude = np.linspace(0, np.pi, 16)
+	x = np.outer(np.cos(longitude), np.sin(latitude))
+	y = np.outer(np.sin(longitude), np.sin(latitude))
+	z = np.outer(np.ones_like(longitude), np.cos(latitude))
+	ax.plot_wireframe(x, y, z, color="#cccccc", linewidth=0.4, alpha=0.5)
+
+
+# Draw raw PCA geometry, the same points on the unit sphere, and the PNS unwrapping, colored by class.
 def plot_raw_vs_polar(pca_scores, pns_scores, labels, layer, out_path):
 	raw = pad_to_three(pca_scores)
+	globe = to_unit_rows(pad_to_three(pca_scores))
 	polar = pad_to_three(pns_scores)
-	fig = plt.figure(figsize=(12.0, 5.5))
-	ax_raw = fig.add_subplot(1, 2, 1, projection="3d")
-	ax_polar = fig.add_subplot(1, 2, 2, projection="3d")
+	fig = plt.figure(figsize=(16.5, 5.5))
+	ax_raw = fig.add_subplot(1, 3, 1, projection="3d")
+	ax_globe = fig.add_subplot(1, 3, 2, projection="3d")
+	ax_polar = fig.add_subplot(1, 3, 3, projection="3d")
+	draw_wireframe_sphere(ax_globe)
 	classes = list(dict.fromkeys(labels))
 	for cls in classes:
 		mask = np.array([lab == cls for lab in labels])
 		color = CLASS_COLORS.get(cls, "#555555")
-		ax_raw.scatter(raw[mask, 0], raw[mask, 1], raw[mask, 2], s=6, alpha=0.55, color=color, label=str(cls))
-		ax_polar.scatter(polar[mask, 0], polar[mask, 1], polar[mask, 2], s=6, alpha=0.55, color=color, label=str(cls))
+		ax_raw.scatter(raw[mask, 0], raw[mask, 1], raw[mask, 2], s=10, alpha=0.75, color=color, label=str(cls), depthshade=False)
+		ax_globe.scatter(globe[mask, 0], globe[mask, 1], globe[mask, 2], s=10, alpha=0.75, color=color, label=str(cls), depthshade=False)
+		ax_polar.scatter(polar[mask, 0], polar[mask, 1], polar[mask, 2], s=10, alpha=0.75, color=color, label=str(cls), depthshade=False)
 	ax_raw.set_title("Raw geometry (PCA dims 1-3)")
+	ax_globe.set_title("On the sphere (PCA 1-3, unit-normalized)")
 	ax_polar.set_title("PNS polar geometry (score dims 1-3)")
-	ax_raw.legend(loc="upper right", fontsize=8)
-	fig.suptitle(f"Layer {layer}: raw vs PNS-unwrapped activations")
+	ax_globe.legend(loc="upper right", fontsize=8)
+	fig.suptitle(f"Layer {layer}: raw vs globe vs PNS-unwrapped activations")
 	fig.tight_layout()
 	fig.savefig(out_path, dpi=150)
 	plt.close(fig)
