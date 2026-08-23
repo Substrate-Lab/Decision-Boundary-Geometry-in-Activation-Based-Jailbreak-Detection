@@ -89,6 +89,7 @@ class Config:
 	seed: int
 	load_in_4bit: bool
 	safety_prompt: bool
+	pooling: str
 
 
 # Build the argument parser for the collection script.
@@ -102,6 +103,7 @@ def build_argparser() -> argparse.ArgumentParser:
 	parser.add_argument("--max-new-tokens", type=int, default=MAX_NEW_TOKENS, help="Tokens to generate for refusal detection.")
 	parser.add_argument("--no-4bit", action="store_true", help="Disable 4-bit quantization (loads full bfloat16 weights).")
 	parser.add_argument("--safety-prompt", action="store_true", help="Prepend a safety system prompt (raises refusal rate).")
+	parser.add_argument("--pooling", choices=["last", "mean"], default="last", help="Pool activations by last token or masked mean over tokens.")
 	parser.add_argument("--layers", type=str, default=None, help="Comma-separated layer indices (default: 1,8,16,24,32).")
 	return parser
 
@@ -279,7 +281,17 @@ def build_batch_inputs(tokenizer, prompts: list[str], safety_prompt: bool):
 	)
 
 
-# Run one batch: extract each prompt's last-token activations and greedily generate its response.
+# Reduce a layer's hidden states to one vector per sequence: last real token, or masked mean over tokens.
+def pool_hidden(hidden, attention_mask, pooling: str):
+	if pooling == "mean":
+		mask = attention_mask.unsqueeze(-1).to(hidden.dtype)
+		summed = (hidden * mask).sum(dim=1)
+		counts = mask.sum(dim=1).clamp(min=1.0)
+		return summed / counts
+	return hidden[:, -1, :]
+
+
+# Run one batch: pool each prompt's activations per layer and greedily generate its response.
 def process_batch(model, tokenizer, prompts: list[str], layers: list[int], config: Config):
 	import torch
 
@@ -297,7 +309,8 @@ def process_batch(model, tokenizer, prompts: list[str], layers: list[int], confi
 		)
 	batch_activations: dict[int, np.ndarray] = {}
 	for layer in layers:
-		batch_activations[layer] = outputs.hidden_states[layer][:, -1, :].to(torch.float32).cpu().numpy()
+		pooled = pool_hidden(outputs.hidden_states[layer], attention_mask, config.pooling)
+		batch_activations[layer] = pooled.to(torch.float32).cpu().numpy()
 
 	with torch.no_grad():
 		generated = model.generate(
@@ -457,6 +470,7 @@ def save_outputs(full_activations, full_rows, balanced_activations, balanced_row
 		"batch_size": config.batch_size,
 		"max_new_tokens": config.max_new_tokens,
 		"safety_prompt": config.safety_prompt,
+		"pooling": config.pooling,
 		"pool_counts": pool_counts,
 		"seed": config.seed,
 		"load_in_4bit": config.load_in_4bit,
@@ -482,6 +496,7 @@ def main() -> None:
 		seed=SEED,
 		load_in_4bit=not args.no_4bit,
 		safety_prompt=args.safety_prompt,
+		pooling=args.pooling,
 	)
 
 	run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
