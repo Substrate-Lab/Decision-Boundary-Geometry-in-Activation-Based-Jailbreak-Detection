@@ -255,17 +255,30 @@ def process_layer(layer, labels, pca_dims, data_dir, figures_dir):
 	plot_raw_vs_polar(pca_scores, scores, labels, layer, figures_dir / f"raw_vs_polar_layer{layer}.png")
 
 
+# Use the requested layers, or fall back to the layers step1 recorded in collection_meta.json.
+def resolve_layers(data_dir: Path, requested):
+	import json
+
+	if requested:
+		return requested
+	meta_path = data_dir / "collection_meta.json"
+	if meta_path.exists():
+		with meta_path.open(encoding="utf-8") as handle:
+			return json.load(handle).get("layers", LAYERS)
+	return LAYERS
+
+
 # Parse arguments and process each requested layer.
 def main():
 	parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-	parser.add_argument("--layers", nargs="+", type=int, default=LAYERS)
+	parser.add_argument("--layers", nargs="+", type=int, default=None)
 	parser.add_argument("--pca-dims", type=int, default=PCA_DIMS)
 	parser.add_argument("--data-dir", type=Path, default=Path(__file__).resolve().parent / "data")
 	parser.add_argument("--figures-dir", type=Path, default=Path(__file__).resolve().parent / "figures")
 	args = parser.parse_args()
 
 	labels = load_labels(args.data_dir)
-	for layer in args.layers:
+	for layer in resolve_layers(args.data_dir, args.layers):
 		process_layer(layer, labels, args.pca_dims, args.data_dir, args.figures_dir)
 	print("done", file=sys.stderr)
 

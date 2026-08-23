@@ -156,11 +156,24 @@ def plot_class_spread(layer: int, rows: list[dict], figures_dir: Path) -> None:
 
 
 # Parse arguments, compute sites and spread per layer, and write npz, csv, and figures.
+# Use the requested layers, or fall back to the layers step1 recorded in collection_meta.json.
+def resolve_layers(data_dir: Path, requested):
+	import json
+
+	if requested:
+		return requested
+	meta_path = data_dir / "collection_meta.json"
+	if meta_path.exists():
+		with meta_path.open(encoding="utf-8") as handle:
+			return json.load(handle).get("layers", LAYERS)
+	return LAYERS
+
+
 def main() -> None:
 	parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 	parser.add_argument(
-		"--layers", type=int, nargs="+", default=LAYERS,
-		help="Layers to process (default: %(default)s).",
+		"--layers", type=int, nargs="+", default=None,
+		help="Layers to process (default: the layers recorded in collection_meta.json).",
 	)
 	parser.add_argument(
 		"--data-dir", default=str(DATA_DIR),
@@ -177,7 +190,7 @@ def main() -> None:
 
 	labels = load_labels(data_dir)
 	all_rows: list[dict] = []
-	for layer in args.layers:
+	for layer in resolve_layers(data_dir, args.layers):
 		print(f"processing layer {layer}", file=sys.stderr)
 		npz_dict, csv_rows = compute_layer(layer, labels, data_dir)
 		npz_path = data_dir / f"sites_layer{layer}.npz"
