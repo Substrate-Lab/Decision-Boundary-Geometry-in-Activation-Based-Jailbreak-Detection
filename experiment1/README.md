@@ -1,145 +1,136 @@
-# Experiment 1 — Decision-Boundary Geometry in a 2D Toy Lab
+# Experiment 1 — Unwrapping the Geometry & Building the Map
 
-## What this is
+## Goal
 
-Experiment 1 is the foundational proof-of-concept for the whole paper. It is a
-controlled, two-dimensional "toy laboratory" that deliberately strips away the
-messiness of real Large Language Models (LLMs) so we can test the core
-mathematical claim in a setting where we already know the exact right answer.
+This experiment tests a simple but consequential idea: that the internal
+activations of a language model do not live in a flat, ordinary space, but on
+the surface of a curved high-dimensional sphere. It also checks whether the
+three behaviour classes we care about occupy that surface very differently —
+with refusals clustered tightly together and jailbreaks spread out widely. If
+both claims hold, they are the geometric groundwork on which the later
+power-diagram decision boundary and its safety margin are built. In short, we
+are unwrapping the geometry and drawing the first version of the map.
 
-The claim is simple to state:
+## The three classes (assigned by behaviour, not by label)
 
-> When one class of points is tightly packed and another is widely scattered
-> (a *covariance mismatch*), a standard linear probe draws its decision boundary
-> in the wrong place. A **Power Diagram** puts the boundary back where it belongs.
+We do not trust a prompt's dataset label alone. Instead we run the model, read
+what it actually did, and classify the activation by the model's own behaviour:
 
-Because this is a synthetic setup, we can compute the mathematically perfect
-boundary and check each method against it. If the idea does not work here, there
-is no point taking it to a real model. If it does work here, we have a solid
-foundation to build on.
+- **Refusal** — a harmful prompt that the model *refused*.
+- **Jailbreak** — a harmful prompt that the model *complied* with.
+- **Benign** — a harmless prompt that the model *complied* with.
 
-## Two levels of understanding
+A harmless prompt that the model refuses is "over-refusal." It is not one of
+our three classes, so it is skipped.
 
-### Level 1 — the geometric sandbox
+Prompts are drawn from the project's four datasets — SORRY-Bench,
+WildJailbreak, ToxicChat, and Aegis 2.0 — loaded through
+`../dataset/load_datasets.py`.
 
-We create two groups of points in a 2D plane, each drawn from a Gaussian (bell-shaped)
-distribution:
+## The three steps
 
-- **Class A (Refusal)** is centered at `mu_A = [-2, 0]` with tight spread,
-  `Sigma_A = I` (the identity matrix — a small, round cluster).
-- **Class B (Jailbreak)** is centered at `mu_B = [2, 0]` with spread scaled by a
-  factor `k`, so `Sigma_B = k * I`.
+The pipeline is three sequential, self-contained scripts. Each reads the
+previous step's output and writes its own.
 
-We run two scenarios, which we call *strata*:
+### Step 1 — Collect activations
 
-- **Low-Mismatch (`k = 1`)** — both classes have equal spread.
-- **High-Mismatch (`k = 10`)** — Class B is ten times more diffuse than Class A.
+**What:** We run an instruction-tuned LLM (default
+`meta-llama/Llama-3.1-8B-Instruct`) on a balanced sample of prompts, let it
+generate a response, detect whether it refused, and assign one of the three
+classes above. For each prompt we save the last-token residual-stream
+activation — the model's internal state — at layers **1, 8, 16, 24, and 32**.
 
-When the two spreads match, a flat boundary placed at the midpoint between the
-two centers separates them cleanly. But when Class B is far more spread out, that
-same flat midpoint boundary slices straight through the sprawling tail of Class B
-— labelling many genuine Class B points as if they were Class A.
+**Why:** Sampling several layers lets us watch the geometry form. Early layers
+carry surface features; middle and late layers carry the model's "intent."
+Recording several layers means we can later choose where the classes separate
+most cleanly.
 
-### Level 2 — the reality this simulates
+### Step 2 — Unwrap the sphere with Principal Nested Spheres (PNS)
 
-The toy setup is a stand-in for something concrete that happens inside a real
-LLM's *residual stream* (its internal activation space):
+**What:** We first reduce dimensionality with PCA, project the points onto the
+unit sphere `S^{k-1}`, then fit full **Principal Nested Spheres** (Jung,
+Dryden & Marron, 2012) to unwrap the sphere into nested polar coordinates.
 
-- **Class A mirrors the "refusal attractor."** Safety fine-tuning tends to
-  collapse many different harmful prompts into one stereotyped, dense,
-  low-variance "refusal" direction. Refusals look alike, so they cluster tightly.
-- **Class B mirrors the "compliance manifold."** A successful jailbreak makes the
-  model do all sorts of different tasks — writing poetry, decoding Base64,
-  producing Python, playing a role. These varied behaviours push activations out
-  into a broad, high-variance region.
+**Why:** Ordinary PCA flattens the space by pressing it onto straight lines.
+On a curved surface that flattening destroys angles — and angles are exactly
+what encode directional intent. PNS instead peels the sphere one nested layer
+at a time, like removing the skins of an onion. It keeps the **radius** as a
+faithful record of magnitude (`||x||`) and the **angles** as a faithful record
+of direction. The result is a coordinate system that respects the curvature
+rather than fighting it.
 
-So a flat midpoint boundary — exactly what a linear probe learns — will tend to
-misclassify the more unusual jailbreaks as safe. That is the failure mode we want
-to catch and fix.
+A sanity plot (`raw_vs_polar_layer{L}.png`) shows the raw sphere beside the
+unwrapped polar view. If the geometry is real, Refusal points sit tightly
+grouped while Jailbreak points spread out.
 
-```
-LOW-MISMATCH (k = 1): midpoint fence works
-        |
-   A A  |  B B
-  A A A | B B B
-   A A  |  B B
-        |
-   mu_A    mu_B
-   fence sits at the midpoint; both clusters are equally tight
+### Step 3 — Build sites and covariance
 
+**What:** In the unwrapped PNS space we compute, for each class `c`, a mean
+vector `mu_c` and a full covariance matrix `Sigma_c`. We write these out and
+summarise each class's spread with the trace and the log-generalized-variance
+of its covariance.
 
-HIGH-MISMATCH (k = 10): midpoint fence cuts off diffuse Class B
-              |
-              |    B         B
-   A A        |  B    B   B      B
-  A A A       | B   B    B    B    B     <- Class B sprawls
-   A A        |  B    B   B      B
-              |    B         B
-              |
-   mu_A         mu_B
-   fence still at the midpoint, but Class B's wide tail spills across it
-   and gets wrongly labelled as Class A
-```
-
-## The five methods compared
-
-- **Bayes Optimal (Ground Truth)** — computed directly from the known true
-  parameters; the mathematically perfect boundary that nothing can beat.
-- **QDA (Quadratic Discriminant Analysis)** — estimates the means and covariances
-  from data to form a curved boundary; the gold-standard statistical benchmark.
-- **Linear Probe / Logistic Regression** — fits a single flat line; ignores
-  covariance entirely.
-- **Plain Voronoi** — places the boundary at the strict midpoint between the two
-  centroids using ordinary (Euclidean) distance; also ignores covariance.
-- **Power Diagram (our method)** — uses the centroids plus a scalar weight per
-  class, `w_c = trace(Sigma_hat_c)`, taken from each class's variance. The
-  boundary is where the *power distances* are equal:
-  `||x - mu_A||^2 - w_A = ||x - mu_B||^2 - w_B`.
+**Why:** The mean `mu_c` is the class's "home" — its centre of mass. The
+covariance `Sigma_c` describes how widely and in which directions the class
+spreads around that home. Comparing the spreads tells us whether the classes
+are equally diffuse (they are not) — which is precisely why a naive
+equal-distance boundary will fail and a power diagram is needed later.
 
 ## How to run
 
-Run the three scripts in order:
+Figures and data are produced only when you run the scripts, in order:
 
-1. `python step1_generate_data.py` — generate the synthetic 2D data for both
-   strata; writes CSV files into `data/`.
-2. `python step2_fit_boundaries.py` — fit all five methods and extract/plot their
-   decision boundaries; writes boundary figures into `figures/`.
-3. `python step3_evaluate.py` — score every method against the Bayes-optimal
-   ground truth; writes a metrics table into `data/` and a summary figure into
-   `figures/`.
+1. `python step1_collect_activations.py`
+2. `python step2_pns_unwrap.py`
+3. `python step3_sites_covariance.py`
 
-Figures are produced only when the scripts are actually run.
+Useful flags:
 
-## Metrics
+| Flag | Purpose |
+|------|---------|
+| `--model` | Choose the LLM (default `meta-llama/Llama-3.1-8B-Instruct`). |
+| `--sample-per-class` | How many prompts to collect per class. |
+| `--no-4bit` | Disable 4-bit quantization (use full/bf16 weights). |
+| `--layers` | Which layers to record (default `1 8 16 24 32`). |
+| `--pca-dims` | PCA dimensionality before projecting to the sphere. |
 
-- **Misclassification rate and ROC AUC** — measured on held-out test points not
-  used for fitting.
-- **Boundary Distance Error (RMS)** — sample points along the true Bayes boundary,
-  then measure the perpendicular distance from each of those points to a method's
-  boundary and report the root-mean-square.
-- **Boundary Area Error** — the area of the 2D grid where a method's prediction
-  disagrees with the Bayes-optimal prediction.
+## Requirements and hardware notes
+
+- A **CUDA GPU** and **Python 3.10+** are required.
+- Llama-3.1-8B is **gated**: accept the model terms on Hugging Face and provide
+  an HF token (`huggingface-cli login`).
+- On a **12 GB GPU** (for example an RTX 5070) the 8B model needs **4-bit
+  quantization** (on by default, via `bitsandbytes`). Alternatively use a
+  smaller model such as `meta-llama/Llama-3.2-3B-Instruct` in bf16.
+- **RTX 50-series (Blackwell)** GPUs need a recent CUDA build of PyTorch
+  (cu124 or newer).
+- On **Windows**, WSL2 is recommended for CUDA plus `bitsandbytes`.
+
+See `requirements.txt` for the Python dependencies.
+
+## Outputs and folder layout
+
+Written to `data/` (one file per layer `L`):
+
+- `activations_layer{L}.npy` — last-token residual-stream activations.
+- `labels.csv` — behavioural class per prompt.
+- `collection_meta.json` — run configuration and metadata.
+- `pns_layer{L}.npy` — points in unwrapped PNS (polar) coordinates.
+- `pns_model_layer{L}.npz` — the fitted PNS model parameters.
+- `sites_layer{L}.npz` — per-class `mu_c` and `Sigma_c`.
+- `class_spread.csv` — trace and log-generalized-variance per class.
+
+Written to `figures/`:
+
+- `raw_vs_polar_layer{L}.png` — raw sphere vs unwrapped polar view.
+- `class_spread_layer{L}.png` — bar chart of per-class spread.
 
 ## What success looks like
 
-| Method                    | High-Mismatch (k = 10) | Low-Mismatch (k = 1) |
-| ------------------------- | ---------------------- | -------------------- |
-| Linear Probe / Voronoi    | High error             | Low error            |
-| QDA                       | Low error              | Low error            |
-| Power Diagram (ours)      | Low error (≈ QDA)      | Low error (≈ QDA)    |
-
-**Victory condition.** On the high-mismatch stratum (`k = 10`), the Power Diagram
-must reach a Boundary Distance Error (RMS) far below that of the Linear Probe and
-comparable to QDA — while keeping a clean, piecewise-linear boundary rather than a
-fully curved one. Meeting this bar proves the mathematical foundation is sound and
-justifies moving on to real LLM activations in Experiment 2.
-
-## Folder layout
-
-- `README.md` — this document.
-- `step1_generate_data.py` — generates the synthetic data for both strata.
-- `step2_fit_boundaries.py` — fits the five methods and extracts their boundaries.
-- `step3_evaluate.py` — scores each method against the Bayes-optimal ground truth.
-- `data/` — synthetic CSVs, the `metrics.csv` results table, and `params.json`
-  recording the generating parameters.
-- `figures/` — boundary and summary figures (produced on run).
+The raw-vs-polar plot visibly separates the classes, with Refusal clustered
+tightly and Jailbreak diffuse. And `class_spread.csv` shows both trace(`Sigma_c`)
+and log-generalized-variance ordered **Refusal < Benign < Jailbreak**. That
+ordering is the evidence we are after: the classes have genuinely mismatched
+covariances. That mismatch is what motivates the power-diagram treatment in the
+later experiments, where unequal spreads are handled properly rather than
+assumed away.
