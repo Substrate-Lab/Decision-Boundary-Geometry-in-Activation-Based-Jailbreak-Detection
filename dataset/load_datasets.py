@@ -97,20 +97,32 @@ def load_sorry_bench() -> list[Example]:
 	return examples
 
 
-# Load the WildJailbreak train config (~262k gated rows) with vanilla/adversarial prompts.
+# Load the WildJailbreak train split (~262k gated rows) with vanilla/adversarial prompts.
+# The datasets TSV builder errors partway through the file, so we fetch the raw TSV and
+# parse it with pandas, skipping the handful of malformed rows.
 def load_wildjailbreak() -> list[Example]:
-	load_dataset = require_datasets()
-	print("loading allenai/wildjailbreak (train)", file=sys.stderr)
+	import pandas as pd
+	from huggingface_hub import hf_hub_download
+
+	print("loading allenai/wildjailbreak (train.tsv)", file=sys.stderr)
 	try:
-		rows = load_dataset("allenai/wildjailbreak", "train", split="train")
+		path = hf_hub_download(
+			repo_id="allenai/wildjailbreak",
+			filename="train/train.tsv",
+			repo_type="dataset",
+		)
 	except Exception as error:
 		raise RuntimeError(
-			"Failed to load allenai/wildjailbreak. This dataset is gated: accept the "
+			"Failed to fetch allenai/wildjailbreak. This dataset is gated: accept the "
 			"terms at https://huggingface.co/datasets/allenai/wildjailbreak and set an "
-			"HF token (run `huggingface-cli login` or set HUGGINGFACE_HUB_TOKEN)."
+			"HF token (run `hf auth login` or set HF_TOKEN)."
 		) from error
+	frame = pd.read_csv(
+		path, sep="\t", dtype=str, keep_default_na=False,
+		engine="python", on_bad_lines="skip",
+	)
 	examples: list[Example] = []
-	for index, row in enumerate(rows):
+	for index, row in frame.iterrows():
 		data_type = (row.get("data_type") or "").strip()
 		vanilla = (row.get("vanilla") or "").strip()
 		adversarial = (row.get("adversarial") or "").strip()
@@ -134,8 +146,6 @@ def load_wildjailbreak() -> list[Example]:
 				"has_completion": bool(completion),
 			},
 		))
-		if (index + 1) % 20000 == 0:
-			print(f"wildjailbreak: processed {index + 1} rows", file=sys.stderr)
 	print(f"wildjailbreak: loaded {len(examples)} examples", file=sys.stderr)
 	return examples
 
