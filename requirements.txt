@@ -1,3 +1,3 @@
-# Only needed for OR-Bench (downloaded from the Hugging Face Hub).
-# HarmBench, AdvBench and EVOREFUSE-TEST load with the Python standard library.
+# All four datasets load from the Hugging Face Hub via the datasets package.
+# SORRY-Bench, WildJailbreak and Aegis are gated: accept their terms and set an HF token.
 datasets>=2.18.0
