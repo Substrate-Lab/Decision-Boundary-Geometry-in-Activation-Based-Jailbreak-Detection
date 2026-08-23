@@ -1,0 +1,20 @@
+# Experiment 1 — Unwrapping the Geometry & Building the Map
+# Python 3.10+ and a CUDA GPU required.
+#
+# torch: install a CUDA build matching your GPU. Use cu124 or newer for
+#   RTX 50-series (Blackwell), e.g.:
+#     pip install torch --index-url https://download.pytorch.org/whl/cu124
+#
+# Llama models are gated: run `huggingface-cli login` or set an HF token
+#   (HF_TOKEN / HUGGING_FACE_HUB_TOKEN) before running step1.
+
+torch
+transformers
+accelerate
+bitsandbytes        # 4-bit quantization for running 8B models on ~12 GB GPUs
+numpy
+scipy
+scikit-learn
+matplotlib
+pandas
+datasets
