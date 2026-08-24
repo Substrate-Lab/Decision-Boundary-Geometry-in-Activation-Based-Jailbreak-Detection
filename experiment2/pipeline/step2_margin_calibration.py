@@ -22,11 +22,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.space import OUTPUT_DIR as DATA_DIR, FIGURES_DIR
+
 DEFAULT_MODELS = ["power_multi", "qda", "lda"]
 BINS = 10
-
-DATA_DIR = Path(__file__).resolve().parent / "data"
-FIGURES_DIR = Path(__file__).resolve().parent / "figures"
 
 
 # Rank-normalize a margin column to a confidence in [0, 1].

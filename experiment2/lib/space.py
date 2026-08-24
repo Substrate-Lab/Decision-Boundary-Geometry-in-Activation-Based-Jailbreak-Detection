@@ -17,7 +17,10 @@ import pandas as pd
 from sklearn.decomposition import PCA
 
 SEED = 0
-DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "experiment1" / "data"
+EXPERIMENT_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_DATA_DIR = EXPERIMENT_DIR.parent / "experiment1" / "data"
+OUTPUT_DIR = EXPERIMENT_DIR / "data"
+FIGURES_DIR = EXPERIMENT_DIR / "figures"
 
 
 # Load labels.csv in row_index order and return the class labels.

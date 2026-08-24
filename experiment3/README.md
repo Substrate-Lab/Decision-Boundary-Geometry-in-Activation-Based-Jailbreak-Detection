@@ -51,12 +51,25 @@ diagram never overtakes the linear probe at the horizon, that is strong evidence
 method as QDA-in-space (resolution 2) rather than as a power diagram. Report the curve to the PI
 before committing the framing.
 
+## Code layout
+
+```
+experiment3/
+  lib/          detectors.py (linear probe, plain Voronoi, and adapters over the Experiment 2
+                discriminants, imported as experiment2.lib.discriminants)
+  pipeline/     the ordered steps: step1_auc_shootout -> step2_cross_family -> step3_fractal
+  data/ figures/  generated outputs (gitignored)
+```
+
+Scripts run from the repo root; they reuse `experiment2.lib` for the working space and
+discriminants, so Experiment 2 must sit alongside this folder.
+
 ## Running
 
 ```
-python step1_auc_shootout.py --space rawpca
-python step2_cross_family.py --space rawpca
-python step3_fractal.py --space rawpca
+python experiment3/pipeline/step1_auc_shootout.py --space rawpca
+python experiment3/pipeline/step2_cross_family.py --space rawpca
+python experiment3/pipeline/step3_fractal.py --space rawpca
 ```
 
 Add `--space pns` to repeat in PNS space, `--positive Refusal --negative Benign` for the

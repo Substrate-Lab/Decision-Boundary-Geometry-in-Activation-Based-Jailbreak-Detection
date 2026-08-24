@@ -24,14 +24,13 @@ import numpy as np
 import pandas as pd
 from sklearn.mixture import GaussianMixture
 
-from discriminants import build_discriminant
-from space import DEFAULT_DATA_DIR, load_labels, resolve_layers, working_space
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.discriminants import build_discriminant
+from lib.space import DEFAULT_DATA_DIR, OUTPUT_DIR, load_labels, resolve_layers, working_space
 
 DEFAULT_MODELS = ["power_multi", "qda", "lda", "power_single"]
 SEED = 0
 RESOLUTION = 400
-
-OUTPUT_DIR = Path(__file__).resolve().parent / "data"
 
 
 # Per-class Gaussian mixture used as the reference density; scores are negative log-likelihoods.

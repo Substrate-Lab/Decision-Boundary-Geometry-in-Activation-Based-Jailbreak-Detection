@@ -26,16 +26,17 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "experiment2"))
-from space import DEFAULT_DATA_DIR, load_labels, resolve_layers, working_space
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from experiment2.lib.space import DEFAULT_DATA_DIR, load_labels, resolve_layers, working_space
 
-from detectors import build_detector, default_detectors
+from lib.detectors import build_detector, default_detectors
 
 SEED = 0
 FOLDS = 5
 
-DATA_DIR = Path(__file__).resolve().parent / "data"
-FIGURES_DIR = Path(__file__).resolve().parent / "figures"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+FIGURES_DIR = Path(__file__).resolve().parents[1] / "figures"
 
 
 # Mean and std cross-validated AUC for one detector on one layer's two-class data.

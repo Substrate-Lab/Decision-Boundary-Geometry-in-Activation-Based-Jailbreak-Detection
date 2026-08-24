@@ -20,8 +20,8 @@ from pathlib import Path
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "experiment2"))
-from discriminants import build_discriminant
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from experiment2.lib.discriminants import build_discriminant
 
 DISCRIMINANT_NAMES = ["lda", "qda", "power_single", "power_multi"]
 
