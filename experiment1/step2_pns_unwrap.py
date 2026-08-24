@@ -26,20 +26,14 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import minimize
 from sklearn.decomposition import PCA
 
-LAYERS = [1, 8, 16, 24, 32]
+from common import CLASS_COLORS, load_labels, resolve_layers
+
 PCA_DIMS = 10
 SEED = 0
-
-CLASS_COLORS = {
-	"Refusal": "#1ecb96",
-	"Jailbreak": "#e5484d",
-	"Benign": "#f5c518",
-}
 
 
 # Fitted PNS transform: PCA basis plus the ordered list of nested-subsphere levels.
@@ -253,14 +247,6 @@ def plot_raw_vs_polar(pca_scores, pns_scores, labels, layer, out_path):
 	print(f"  wrote {out_path}", file=sys.stderr)
 
 
-# Load labels.csv and return the class labels in row_index order.
-def load_labels(data_dir):
-	frame = pd.read_csv(data_dir / "labels.csv")
-	if "row_index" in frame.columns:
-		frame = frame.sort_values("row_index").reset_index(drop=True)
-	return frame["class_label"].tolist()
-
-
 # Run the full PNS pipeline for one layer and write scores, model, and figure.
 def process_layer(layer, labels, pca_dims, data_dir, figures_dir):
 	activations = np.load(data_dir / f"activations_layer{layer}.npy")
@@ -275,19 +261,6 @@ def process_layer(layer, labels, pca_dims, data_dir, figures_dir):
 	print(f"layer {layer}: PNS scores {scores.shape}", file=sys.stderr)
 	figures_dir.mkdir(parents=True, exist_ok=True)
 	plot_raw_vs_polar(pca_scores, scores, labels, layer, figures_dir / f"raw_vs_polar_layer{layer}.png")
-
-
-# Use the requested layers, or fall back to the layers step1 recorded in collection_meta.json.
-def resolve_layers(data_dir: Path, requested):
-	import json
-
-	if requested:
-		return requested
-	meta_path = data_dir / "collection_meta.json"
-	if meta_path.exists():
-		with meta_path.open(encoding="utf-8") as handle:
-			return json.load(handle).get("layers", LAYERS)
-	return LAYERS
 
 
 # Parse arguments and process each requested layer.

@@ -19,27 +19,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from sklearn.decomposition import PCA
 
-CLASS_COLORS = {
-	"Refusal": "#1ecb96",
-	"Jailbreak": "#e5484d",
-	"Benign": "#f5c518",
-}
-CLASS_NAMES = ["Refusal", "Jailbreak", "Benign"]
+from common import CLASS_COLORS, CLASS_NAMES, load_labels
+
 DEFAULT_LAYERS = [8, 16, 24, 30, 36]
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FIGURES_DIR = Path(__file__).resolve().parent / "figures"
-
-
-# Load labels.csv in row_index order.
-def load_labels(data_dir: Path) -> np.ndarray:
-	frame = pd.read_csv(data_dir / "labels.csv")
-	if "row_index" in frame.columns:
-		frame = frame.sort_values("row_index").reset_index(drop=True)
-	return frame["class_label"].to_numpy()
 
 
 # Project a layer's raw activations to 3 PCA dimensions.

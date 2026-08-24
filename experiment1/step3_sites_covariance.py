@@ -27,8 +27,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-LAYERS = [1, 8, 16, 24, 32]
-CLASSES = ["Refusal", "Jailbreak", "Benign"]
+from common import CLASS_NAMES, load_labels_frame, resolve_layers
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FIGURES_DIR = Path(__file__).resolve().parent / "figures"
@@ -48,15 +47,6 @@ class ClassStats:
 	logdet_sign: float
 	mean_norm: float
 	well_conditioned: bool
-
-
-# Load labels.csv and return it as a DataFrame aligned to the activation arrays.
-def load_labels(data_dir: Path) -> pd.DataFrame:
-	labels_path = data_dir / "labels.csv"
-	labels = pd.read_csv(labels_path)
-	labels = labels.sort_values("row_index").reset_index(drop=True)
-	print(f"loaded {labels_path} ({len(labels)} rows)", file=sys.stderr)
-	return labels
 
 
 # Load the PNS (polar) embedding array for one layer.
@@ -109,7 +99,7 @@ def class_statistics(scores: np.ndarray, mask: np.ndarray, class_label: str) -> 
 def compute_layer(layer: int, labels: pd.DataFrame, data_dir: Path) -> tuple[dict, list[dict]]:
 	scores = load_pns_scores(layer, data_dir)
 	label_values = labels["class_label"].to_numpy()
-	present = [name for name in CLASSES if np.any(label_values == name)]
+	present = [name for name in CLASS_NAMES if np.any(label_values == name)]
 	npz_dict: dict[str, np.ndarray] = {"class_order": np.array(present, dtype=object)}
 	csv_rows: list[dict] = []
 	for class_label in present:
@@ -137,7 +127,7 @@ def compute_layer(layer: int, labels: pd.DataFrame, data_dir: Path) -> tuple[dic
 # Save a bar chart of trace(covariance) by class for one layer.
 def plot_class_spread(layer: int, rows: list[dict], figures_dir: Path) -> None:
 	figures_dir.mkdir(parents=True, exist_ok=True)
-	ordered = [row for name in CLASSES for row in rows if row["class_label"] == name]
+	ordered = [row for name in CLASS_NAMES for row in rows if row["class_label"] == name]
 	names = [row["class_label"] for row in ordered]
 	traces = [row["trace_cov"] for row in ordered]
 	colors = {"Refusal": "#2a7d4f", "Jailbreak": "#b23a48", "Benign": "#4a5568"}
@@ -156,19 +146,6 @@ def plot_class_spread(layer: int, rows: list[dict], figures_dir: Path) -> None:
 
 
 # Parse arguments, compute sites and spread per layer, and write npz, csv, and figures.
-# Use the requested layers, or fall back to the layers step1 recorded in collection_meta.json.
-def resolve_layers(data_dir: Path, requested):
-	import json
-
-	if requested:
-		return requested
-	meta_path = data_dir / "collection_meta.json"
-	if meta_path.exists():
-		with meta_path.open(encoding="utf-8") as handle:
-			return json.load(handle).get("layers", LAYERS)
-	return LAYERS
-
-
 def main() -> None:
 	parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 	parser.add_argument(
@@ -188,7 +165,7 @@ def main() -> None:
 	data_dir = Path(args.data_dir)
 	figures_dir = Path(args.figures_dir)
 
-	labels = load_labels(data_dir)
+	labels = load_labels_frame(data_dir)
 	all_rows: list[dict] = []
 	for layer in resolve_layers(data_dir, args.layers):
 		print(f"processing layer {layer}", file=sys.stderr)

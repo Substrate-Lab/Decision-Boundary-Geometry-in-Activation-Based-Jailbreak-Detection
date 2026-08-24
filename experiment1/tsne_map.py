@@ -19,15 +19,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
-CLASS_COLORS = {
-	"Refusal": "#1ecb96",
-	"Jailbreak": "#e5484d",
-	"Benign": "#f5c518",
-}
+from common import CLASS_COLORS, load_labels
+
 DEFAULT_LAYERS = [8, 16, 24, 30, 36]
 DEFAULT_CLASSES = ["Benign", "Jailbreak"]
 PCA_PREDIMS = 50
@@ -35,14 +31,6 @@ SEED = 0
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FIGURES_DIR = Path(__file__).resolve().parent / "figures"
-
-
-# Load labels.csv in row_index order.
-def load_labels(data_dir: Path) -> np.ndarray:
-	frame = pd.read_csv(data_dir / "labels.csv")
-	if "row_index" in frame.columns:
-		frame = frame.sort_values("row_index").reset_index(drop=True)
-	return frame["class_label"].to_numpy()
 
 
 # Embed activations into 2D via PCA-then-t-SNE.
