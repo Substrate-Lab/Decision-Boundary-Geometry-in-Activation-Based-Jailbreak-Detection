@@ -157,7 +157,56 @@ def plot_power_map(points2d: np.ndarray, labels: np.ndarray, layer: int, accurac
 	print(f"wrote {out_path}", file=sys.stderr)
 
 
-# Fit and evaluate the multi-site power diagram for one layer, and save its 2D power map.
+# Class-level geometric margin at each point: nearest other-class minus nearest own-class power distance.
+def class_margin_field(distances: np.ndarray, site_classes: np.ndarray):
+	present = [name for name in CLASS_NAMES if (site_classes == name).any()]
+	class_min = np.stack([distances[:, site_classes == name].min(axis=1) for name in present], axis=1)
+	order = np.argsort(class_min, axis=1)
+	assigned = np.array(present)[order[:, 0]]
+	smallest = np.take_along_axis(class_min, order[:, :1], axis=1)[:, 0]
+	second = np.take_along_axis(class_min, order[:, 1:2], axis=1)[:, 0]
+	return assigned, second - smallest
+
+
+# Render the confidence heatmap: class color with opacity = geometric margin (dense near centroids, fading to the boundary).
+def plot_confidence_map(points2d: np.ndarray, labels: np.ndarray, layer: int, sites_per_class: int, out_path: Path) -> None:
+	means, weights, site_classes = fit_subsites(points2d, labels, sites_per_class)
+	pad = 0.1 * (points2d.max(axis=0) - points2d.min(axis=0) + 1e-6)
+	lo = points2d.min(axis=0) - pad
+	hi = points2d.max(axis=0) + pad
+	grid_x, grid_y = np.meshgrid(
+		np.linspace(lo[0], hi[0], GRID_RESOLUTION),
+		np.linspace(lo[1], hi[1], GRID_RESOLUTION),
+	)
+	grid = np.column_stack([grid_x.ravel(), grid_y.ravel()])
+	assigned, margin = class_margin_field(power_distances(grid, means, weights), site_classes)
+
+	ceiling = np.percentile(margin, 95)
+	normalized = np.clip(margin / ceiling, 0.0, 1.0) if ceiling > 0 else np.zeros_like(margin)
+	class_index = {name: i for i, name in enumerate(CLASS_NAMES)}
+	rgb = np.array([hex_to_rgb(CLASS_COLORS[name]) for name in CLASS_NAMES])
+	image = np.zeros((grid.shape[0], 4))
+	image[:, :3] = rgb[np.array([class_index[name] for name in assigned])]
+	image[:, 3] = 0.12 + 0.85 * normalized
+	image = image.reshape(*grid_x.shape, 4)
+
+	fig, ax = plt.subplots(figsize=(7.5, 6.5))
+	ax.imshow(image, origin="lower", extent=(lo[0], hi[0], lo[1], hi[1]), aspect="auto", interpolation="bilinear")
+	for name in CLASS_NAMES:
+		mask = labels == name
+		if mask.any():
+			ax.scatter(points2d[mask, 0], points2d[mask, 1], s=6, alpha=0.55, color=CLASS_COLORS[name], edgecolor="none", label=name)
+	ax.set_xlabel("LDA-1")
+	ax.set_ylabel("LDA-2")
+	ax.set_title(f"Confidence heatmap, layer {layer} (opacity = geometric margin)")
+	ax.legend(loc="upper right", fontsize=8)
+	fig.tight_layout()
+	fig.savefig(out_path, dpi=150)
+	plt.close(fig)
+	print(f"wrote {out_path}", file=sys.stderr)
+
+
+# Fit and evaluate the multi-site power diagram for one layer, and save its power map and confidence map.
 def process_layer(layer: int, labels: np.ndarray, data_dir: Path, figures_dir: Path, pca_dims: int, sites_per_class: int) -> dict:
 	print(f"processing layer {layer}", file=sys.stderr)
 	points = raw_pca_space(layer, data_dir, pca_dims)
@@ -168,6 +217,7 @@ def process_layer(layer: int, labels: np.ndarray, data_dir: Path, figures_dir: P
 
 	points2d = LinearDiscriminantAnalysis(n_components=2).fit_transform(points, labels)
 	plot_power_map(points2d, labels, layer, accuracy, sites_per_class, figures_dir / f"power_map_layer{layer}.png")
+	plot_confidence_map(points2d, labels, layer, sites_per_class, figures_dir / f"power_confidence_layer{layer}.png")
 
 	return {"layer": layer, "power_accuracy": accuracy, "mean_margin": float(margin.mean()), "n_sites": len(means)}
 
