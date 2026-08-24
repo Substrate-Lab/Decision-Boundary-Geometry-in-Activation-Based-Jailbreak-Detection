@@ -107,14 +107,6 @@ def assign_and_margin(distances: np.ndarray, site_classes: np.ndarray):
 	return predicted, second - smallest
 
 
-# Minimum power distance from each point to the sites of one class (inf if the class is absent).
-def class_min_distance(distances: np.ndarray, site_classes: np.ndarray, name: str) -> np.ndarray:
-	columns = site_classes == name
-	if not columns.any():
-		return np.full(distances.shape[0], np.inf)
-	return distances[:, columns].min(axis=1)
-
-
 # Convert a hex color to an RGB triple in 0..1.
 def hex_to_rgb(value: str) -> tuple[float, float, float]:
 	value = value.lstrip("#")
@@ -214,75 +206,6 @@ def plot_confidence_map(points2d: np.ndarray, labels: np.ndarray, layer: int, si
 	print(f"wrote {out_path}", file=sys.stderr)
 
 
-# Render a blocky 3D confidence map: blue benign ground, distinct Refusal / Jailbreak peaks by geometric margin.
-def plot_confidence_topography(points2d: np.ndarray, labels: np.ndarray, layer: int, sites_per_class: int, out_path: Path, cells: int = 30) -> None:
-	means, weights, site_classes = fit_subsites(points2d, labels, sites_per_class)
-	span = np.ptp(points2d, axis=0)
-	lo = points2d.min(axis=0) - 0.06 * span
-	hi = points2d.max(axis=0) + 0.06 * span
-	centers_x = np.linspace(lo[0], hi[0], cells)
-	centers_y = np.linspace(lo[1], hi[1], cells)
-	grid_x, grid_y = np.meshgrid(centers_x, centers_y)
-	grid = np.column_stack([grid_x.ravel(), grid_y.ravel()])
-
-	distances = power_distances(grid, means, weights)
-	nearest_class = site_classes[distances.argmin(axis=1)]
-	per_class = np.stack([class_min_distance(distances, site_classes, name) for name in CLASS_NAMES], axis=1)
-	sorted_distance = np.sort(per_class, axis=1)
-	margin = sorted_distance[:, 1] - sorted_distance[:, 0]
-	is_harmful = np.isin(nearest_class, ["Refusal", "Jailbreak"])
-	elevation = np.where(is_harmful, margin, 0.0)
-	positive = elevation[elevation > 0]
-	ceiling = np.percentile(positive, 90) if positive.size else 0.0
-	heights = np.clip(elevation / ceiling, 0.0, 1.0) if ceiling > 0 else np.zeros_like(elevation)
-
-	dx = (hi[0] - lo[0]) / cells
-	dy = (hi[1] - lo[1]) / cells
-	base_blue = np.array(hex_to_rgb("#0d2b8c"))
-	peak_colors = np.array([hex_to_rgb(CLASS_COLORS[name]) if name in ("Refusal", "Jailbreak") else base_blue for name in nearest_class])
-
-	fig = plt.figure(figsize=(9.0, 7.5))
-	ax = fig.add_subplot(111, projection="3d")
-	base_x = grid[:, 0] - dx / 2
-	base_y = grid[:, 1] - dy / 2
-	floor_height = 0.02
-	ax.bar3d(base_x, base_y, np.zeros(len(grid)), dx * 0.98, dy * 0.98, np.full(len(grid), floor_height), color=tuple(base_blue), shade=False)
-
-	segments = 14
-	step = 1.0 / segments
-	for level in range(segments):
-		z0 = level * step
-		tall = heights > z0 + 1e-9
-		if not tall.any():
-			continue
-		fraction = (level + 0.5) * step
-		segment_colors = (1.0 - fraction) * base_blue + fraction * peak_colors[tall]
-		segment_height = np.minimum(heights[tall] - z0, step)
-		ax.bar3d(
-			base_x[tall], base_y[tall], np.full(tall.sum(), max(z0, floor_height)),
-			dx * 0.9, dy * 0.9, segment_height,
-			color=[tuple(rgb) for rgb in segment_colors], shade=False,
-		)
-
-	ax.set_xlabel("LDA-1")
-	ax.set_ylabel("LDA-2")
-	ax.set_zlabel("geometric margin")
-	ax.set_zlim(0.0, 1.0)
-	ax.view_init(elev=62, azim=-58)
-	ax.set_title(f"Layer {layer}: harmful decision geometry (Benign = blue ground)")
-	legend_handles = [plt.Line2D([0], [0], marker="s", linestyle="none", markersize=9, color=CLASS_COLORS[name], label=name) for name in ("Refusal", "Jailbreak")]
-	legend_handles.append(plt.Line2D([0], [0], marker="s", linestyle="none", markersize=9, color="#0d2b8c", label="Benign (ground)"))
-	ax.legend(handles=legend_handles, loc="upper left", fontsize=9, title="peak colour = winning class")
-	fig.text(
-		0.5, 0.03,
-		"KEY: blue ground = Benign;  peaks rise where a harmful class wins by a wide geometric margin;  green peak = Refusal, red peak = Jailbreak",
-		ha="center", fontsize=8,
-	)
-	fig.savefig(out_path, dpi=150)
-	plt.close(fig)
-	print(f"wrote {out_path}", file=sys.stderr)
-
-
 # Fit and evaluate the multi-site power diagram for one layer, and save its power map and confidence maps.
 def process_layer(layer: int, labels: np.ndarray, data_dir: Path, figures_dir: Path, pca_dims: int, sites_per_class: int) -> dict:
 	print(f"processing layer {layer}", file=sys.stderr)
@@ -295,7 +218,6 @@ def process_layer(layer: int, labels: np.ndarray, data_dir: Path, figures_dir: P
 	points2d = LinearDiscriminantAnalysis(n_components=2).fit_transform(points, labels)
 	plot_power_map(points2d, labels, layer, accuracy, sites_per_class, figures_dir / f"power_map_layer{layer}.png")
 	plot_confidence_map(points2d, labels, layer, sites_per_class, figures_dir / f"power_confidence_layer{layer}.png")
-	plot_confidence_topography(points2d, labels, layer, sites_per_class, figures_dir / f"power_confidence_3d_layer{layer}.png")
 
 	return {"layer": layer, "power_accuracy": accuracy, "mean_margin": float(margin.mean()), "n_sites": len(means)}
 
