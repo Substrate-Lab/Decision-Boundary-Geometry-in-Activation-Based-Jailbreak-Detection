@@ -22,15 +22,13 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
-from common import CLASS_COLORS, load_labels
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.common import CLASS_COLORS, DATA_DIR, FIGURES_DIR, load_labels
 
 DEFAULT_LAYERS = [8, 16, 24, 30, 36]
 DEFAULT_CLASSES = ["Benign", "Jailbreak"]
 PCA_PREDIMS = 50
 SEED = 0
-
-DATA_DIR = Path(__file__).resolve().parent / "data"
-FIGURES_DIR = Path(__file__).resolve().parent / "figures"
 
 
 # Embed activations into 2D via PCA-then-t-SNE.

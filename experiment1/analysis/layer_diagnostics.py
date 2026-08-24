@@ -28,10 +28,9 @@ from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from common import load_labels_frame, resolve_layers
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.common import DATA_DIR, FIGURES_DIR, load_labels_frame, resolve_layers
 
-DATA_DIR = Path(__file__).resolve().parent / "data"
-FIGURES_DIR = Path(__file__).resolve().parent / "figures"
 SEED = 0
 PROBE_DIMS = [10, 50, 100]
 

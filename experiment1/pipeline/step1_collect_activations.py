@@ -29,8 +29,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import analytics
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib import analytics
 
 MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"
 LAYERS = [1, 8, 16, 24, 32]
@@ -50,7 +50,7 @@ SAFETY_SYSTEM_PROMPT = (
 	"unsafe, unethical, or illegal, refuse it."
 )
 
-DATA_DIR = Path(__file__).resolve().parent / "data"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
 REFUSAL_MARKERS = [
 	"i'm sorry",
@@ -176,9 +176,9 @@ def load_model_and_tokenizer(config: Config):
 	return model, tokenizer
 
 
-# Import the project dataset loaders by adding the sibling dataset dir to sys.path.
+# Import the project dataset loaders by adding the repo-root dataset dir to sys.path.
 def import_dataset_loaders():
-	dataset_dir = Path(__file__).resolve().parent.parent / "dataset"
+	dataset_dir = Path(__file__).resolve().parents[2] / "dataset"
 	sys.path.insert(0, str(dataset_dir))
 	from load_datasets import LOADERS
 

@@ -102,13 +102,37 @@ spreads around that home. Comparing the spreads tells us whether the classes
 are equally diffuse (they are not) — which is precisely why a naive
 equal-distance boundary will fail and a power diagram is needed later.
 
+## Code layout
+
+The code is grouped by role. All scripts are run from the repo root and read/write
+`experiment1/data` and `experiment1/figures` regardless of which folder they live in.
+
+```
+experiment1/
+  lib/          shared importable code (class names/colors, label + layer loading, run analytics)
+  pipeline/     the ordered, data-producing steps (step1 -> step2 -> step3)
+  analysis/     per-layer metrics and diagnostics (covariance similarity, probe accuracy)
+  viz/          figure generators (power diagram, t-SNE, covariance ellipsoids)
+  notes/        written-up findings (the layer-study retrospective)
+  data/         generated outputs (gitignored)
+  figures/      generated figures (gitignored)
+```
+
 ## How to run
 
-Figures and data are produced only when you run the scripts, in order:
+Figures and data are produced only when you run the scripts, from the repo root, in order:
 
-1. `python step1_collect_activations.py`
-2. `python step2_pns_unwrap.py`
-3. `python step3_sites_covariance.py`
+1. `python experiment1/pipeline/step1_collect_activations.py`
+2. `python experiment1/pipeline/step2_pns_unwrap.py`
+3. `python experiment1/pipeline/step3_sites_covariance.py`
+
+Then the analysis and visualization scripts read those outputs:
+
+- `python experiment1/analysis/layer_transition.py` — covariance similarity by layer
+- `python experiment1/analysis/layer_diagnostics.py` — per-layer probe accuracy
+- `python experiment1/viz/power_diagram.py` — multi-site power maps and confidence heatmaps
+- `python experiment1/viz/tsne_map.py` — t-SNE class embeddings
+- `python experiment1/viz/covariance_3d.py` — 3D class covariance ellipsoids
 
 Useful flags:
 
