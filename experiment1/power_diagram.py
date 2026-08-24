@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Build the scalar-weight power diagram per layer and render a 2D power map.
+"""Build a multi-site power diagram per layer and render a 2D power map.
 
-	One site per class: centroid mu_c and weight w_c = trace(Sigma_c). A point is assigned
-	to the class minimising the power distance pi_c(x) = ||x - mu_c||^2 - w_c, and the
-	geometric margin is the gap between the two smallest power distances. The diagram is fit
-	in raw activation space (PCA-reduced), where the class covariance mismatch actually lives
-	(PNS equalises it). For each layer we report assignment accuracy and mean margin, and save
-	a power map: a 2D LDA projection with the power cells, sites, weight rings, and points.
+	Each class is split into many weighted sub-sites (k-means sub-centroids), each with a
+	scalar weight w = trace(Sigma) of its sub-cluster. A point is assigned to the class of the
+	sub-site minimising the power distance pi(x) = ||x - mu||^2 - w. The result is a
+	Laguerre-Voronoi tessellation: many small convex cells that group into per-class regions,
+	so the boundary between classes can curve (piecewise-linear) instead of being one flat
+	hyperplane. The diagram is fit in raw activation space (PCA-reduced), where the class
+	covariance mismatch actually lives. Each layer gets an accuracy, a mean margin, and a power
+	map (2D LDA projection with the sub-cells drawn).
 
 	python power_diagram.py
-	python power_diagram.py --layers 24 26 28 30 32 34 --pca-dims 10
+	python power_diagram.py --sites-per-class 12 --layers 24 30 34
 """
 from __future__ import annotations
 
@@ -23,6 +25,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
@@ -32,7 +35,8 @@ CLASS_COLORS = {
 	"Jailbreak": "#e5484d",
 	"Benign": "#f5c518",
 }
-GRID_RESOLUTION = 300
+SITES_PER_CLASS = 12
+GRID_RESOLUTION = 320
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FIGURES_DIR = Path(__file__).resolve().parent / "figures"
@@ -64,42 +68,54 @@ def raw_pca_space(layer: int, data_dir: Path, pca_dims: int) -> np.ndarray:
 	return PCA(n_components=dims, random_state=0).fit_transform(activations)
 
 
-# Fit one power-diagram site per class: centroid and scalar weight = trace of the covariance.
-def fit_sites(points: np.ndarray, labels: np.ndarray) -> dict[str, tuple]:
-	sites: dict[str, tuple] = {}
+# Split each class into k-means sub-sites, each with a scalar weight = trace of its sub-covariance.
+def fit_subsites(points: np.ndarray, labels: np.ndarray, sites_per_class: int):
+	means: list[np.ndarray] = []
+	weights: list[float] = []
+	site_classes: list[str] = []
 	for name in CLASS_NAMES:
 		mask = labels == name
-		if mask.sum() < 2:
+		class_points = points[mask]
+		if len(class_points) < 2:
 			continue
-		mean = points[mask].mean(axis=0)
-		covariance = np.cov(points[mask], rowvar=False)
-		sites[name] = (mean, float(np.trace(covariance)))
-	return sites
+		clusters = min(sites_per_class, len(class_points))
+		assignment = KMeans(n_clusters=clusters, n_init=10, random_state=0).fit_predict(class_points)
+		for cluster in range(clusters):
+			members = class_points[assignment == cluster]
+			if len(members) == 0:
+				continue
+			mean = members.mean(axis=0)
+			weight = float(np.trace(np.cov(members, rowvar=False))) if len(members) >= 2 else 0.0
+			means.append(mean)
+			weights.append(weight)
+			site_classes.append(name)
+	return np.array(means), np.array(weights), np.array(site_classes)
 
 
-# Power distances of every point to every site: ||x - mu_c||^2 - w_c.
-def power_distances(points: np.ndarray, sites: dict[str, tuple]) -> tuple[list[str], np.ndarray]:
-	names = list(sites)
-	distances = np.empty((points.shape[0], len(names)))
-	for column, name in enumerate(names):
-		mean, weight = sites[name]
-		distances[:, column] = np.sum((points - mean) ** 2, axis=1) - weight
-	return names, distances
+# Power distances of every point to every sub-site: ||x - mu||^2 - w.
+def power_distances(points: np.ndarray, means: np.ndarray, weights: np.ndarray) -> np.ndarray:
+	squared = np.sum((points[:, None, :] - means[None, :, :]) ** 2, axis=2)
+	return squared - weights[None, :]
 
 
-# Assign each point to its minimum-power-distance class and compute its geometric margin.
-def assign_and_margin(names: list[str], distances: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+# Assign each point to the class of its nearest sub-site and compute the geometric margin.
+def assign_and_margin(distances: np.ndarray, site_classes: np.ndarray):
 	order = np.argsort(distances, axis=1)
-	predicted = np.array([names[i] for i in order[:, 0]])
+	predicted = site_classes[order[:, 0]]
 	smallest = np.take_along_axis(distances, order[:, :1], axis=1)[:, 0]
 	second = np.take_along_axis(distances, order[:, 1:2], axis=1)[:, 0]
 	return predicted, second - smallest
 
 
-# Render the 2D power map: cells by power assignment, sites, weight rings, and points.
-def plot_power_map(points2d: np.ndarray, labels: np.ndarray, layer: int, accuracy: float, out_path: Path) -> None:
-	sites = fit_sites(points2d, labels)
-	names = list(sites)
+# Convert a hex color to an RGB triple in 0..1.
+def hex_to_rgb(value: str) -> tuple[float, float, float]:
+	value = value.lstrip("#")
+	return tuple(int(value[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+
+
+# Render the 2D power map: sub-cells colored by class, tessellation edges, sub-sites, and points.
+def plot_power_map(points2d: np.ndarray, labels: np.ndarray, layer: int, accuracy: float, sites_per_class: int, out_path: Path) -> None:
+	means, weights, site_classes = fit_subsites(points2d, labels, sites_per_class)
 	pad = 0.1 * (points2d.max(axis=0) - points2d.min(axis=0) + 1e-6)
 	lo = points2d.min(axis=0) - pad
 	hi = points2d.max(axis=0) + pad
@@ -108,31 +124,32 @@ def plot_power_map(points2d: np.ndarray, labels: np.ndarray, layer: int, accurac
 		np.linspace(lo[1], hi[1], GRID_RESOLUTION),
 	)
 	grid = np.column_stack([grid_x.ravel(), grid_y.ravel()])
-	_, grid_distances = power_distances(grid, sites)
-	grid_assignment = grid_distances.argmin(axis=1).reshape(grid_x.shape)
+	grid_distances = power_distances(grid, means, weights)
+	nearest_site = grid_distances.argmin(axis=1).reshape(grid_x.shape)
+
+	class_index = {name: i for i, name in enumerate(CLASS_NAMES)}
+	grid_class = np.vectorize(lambda s: class_index[site_classes[s]])(nearest_site)
+	cell_colors = np.array([hex_to_rgb(CLASS_COLORS[name]) for name in CLASS_NAMES])
+
+	edges = np.zeros_like(nearest_site, dtype=bool)
+	edges[:, :-1] |= nearest_site[:, :-1] != nearest_site[:, 1:]
+	edges[:-1, :] |= nearest_site[:-1, :] != nearest_site[1:, :]
+	edge_layer = np.zeros((*edges.shape, 4))
+	edge_layer[edges] = (0.15, 0.15, 0.15, 0.5)
 
 	fig, ax = plt.subplots(figsize=(7.5, 6.5))
-	cell_colors = np.array([_hex_to_rgb(CLASS_COLORS[name]) for name in names])
-	ax.imshow(
-		cell_colors[grid_assignment],
-		origin="lower",
-		extent=(lo[0], hi[0], lo[1], hi[1]),
-		aspect="auto",
-		alpha=0.25,
-	)
+	extent = (lo[0], hi[0], lo[1], hi[1])
+	ax.imshow(cell_colors[grid_class], origin="lower", extent=extent, aspect="auto", alpha=0.3)
+	ax.imshow(edge_layer, origin="lower", extent=extent, aspect="auto", interpolation="nearest")
 	for name in CLASS_NAMES:
 		mask = labels == name
 		if mask.any():
-			ax.scatter(points2d[mask, 0], points2d[mask, 1], s=8, alpha=0.7, color=CLASS_COLORS[name], label=name)
-	for name in names:
-		mean, weight = sites[name]
-		ax.scatter([mean[0]], [mean[1]], marker="X", s=160, color=CLASS_COLORS[name], edgecolor="black", linewidth=1.2, zorder=5)
-		if weight > 0:
-			ring = plt.Circle((mean[0], mean[1]), np.sqrt(weight), color=CLASS_COLORS[name], fill=False, linewidth=1.5, alpha=0.9)
-			ax.add_patch(ring)
+			ax.scatter(points2d[mask, 0], points2d[mask, 1], s=7, alpha=0.65, color=CLASS_COLORS[name], label=name)
+	for index, name in enumerate(site_classes):
+		ax.scatter([means[index, 0]], [means[index, 1]], marker="X", s=55, color=CLASS_COLORS[name], edgecolor="black", linewidth=0.8, zorder=5)
 	ax.set_xlabel("LDA-1")
 	ax.set_ylabel("LDA-2")
-	ax.set_title(f"Power map, layer {layer} (power-distance accuracy {accuracy:.3f}); ring = sqrt(weight)")
+	ax.set_title(f"Multi-site power map, layer {layer} ({sites_per_class} sites/class, accuracy {accuracy:.3f})")
 	ax.legend(loc="upper right", fontsize=8)
 	fig.tight_layout()
 	fig.savefig(out_path, dpi=150)
@@ -140,35 +157,27 @@ def plot_power_map(points2d: np.ndarray, labels: np.ndarray, layer: int, accurac
 	print(f"wrote {out_path}", file=sys.stderr)
 
 
-# Convert a hex color to an RGB triple in 0..1.
-def _hex_to_rgb(value: str) -> tuple[float, float, float]:
-	value = value.lstrip("#")
-	return tuple(int(value[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
-
-
-# Fit and evaluate the power diagram for one layer, and save its 2D power map.
-def process_layer(layer: int, labels: np.ndarray, data_dir: Path, figures_dir: Path, pca_dims: int) -> dict:
+# Fit and evaluate the multi-site power diagram for one layer, and save its 2D power map.
+def process_layer(layer: int, labels: np.ndarray, data_dir: Path, figures_dir: Path, pca_dims: int, sites_per_class: int) -> dict:
 	print(f"processing layer {layer}", file=sys.stderr)
 	points = raw_pca_space(layer, data_dir, pca_dims)
-	sites = fit_sites(points, labels)
-	names, distances = power_distances(points, sites)
-	predicted, margin = assign_and_margin(names, distances)
+	means, weights, site_classes = fit_subsites(points, labels, sites_per_class)
+	distances = power_distances(points, means, weights)
+	predicted, margin = assign_and_margin(distances, site_classes)
 	accuracy = float((predicted == labels).mean())
 
 	points2d = LinearDiscriminantAnalysis(n_components=2).fit_transform(points, labels)
-	plot_power_map(points2d, labels, layer, accuracy, figures_dir / f"power_map_layer{layer}.png")
+	plot_power_map(points2d, labels, layer, accuracy, sites_per_class, figures_dir / f"power_map_layer{layer}.png")
 
-	row = {"layer": layer, "power_accuracy": accuracy, "mean_margin": float(margin.mean())}
-	for name in names:
-		row[f"weight_{name}"] = sites[name][1]
-	return row
+	return {"layer": layer, "power_accuracy": accuracy, "mean_margin": float(margin.mean()), "n_sites": len(means)}
 
 
-# Parse arguments, build the power diagram per layer, save the CSV and power maps.
+# Parse arguments, build the multi-site power diagram per layer, save the CSV and power maps.
 def main() -> None:
 	parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 	parser.add_argument("--layers", type=int, nargs="+", default=None)
 	parser.add_argument("--pca-dims", type=int, default=10)
+	parser.add_argument("--sites-per-class", type=int, default=SITES_PER_CLASS)
 	parser.add_argument("--data-dir", type=Path, default=DATA_DIR)
 	parser.add_argument("--figures-dir", type=Path, default=FIGURES_DIR)
 	args = parser.parse_args()
@@ -176,7 +185,7 @@ def main() -> None:
 	labels = load_labels(args.data_dir)
 	layers = resolve_layers(args.data_dir, args.layers)
 	args.figures_dir.mkdir(parents=True, exist_ok=True)
-	rows = [process_layer(layer, labels, args.data_dir, args.figures_dir, args.pca_dims) for layer in layers]
+	rows = [process_layer(layer, labels, args.data_dir, args.figures_dir, args.pca_dims, args.sites_per_class) for layer in layers]
 
 	result = pd.DataFrame(rows)
 	csv_path = args.data_dir / "power_diagram.csv"
