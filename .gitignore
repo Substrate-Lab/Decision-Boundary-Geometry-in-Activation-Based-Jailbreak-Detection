@@ -12,6 +12,8 @@ experiment1/data/
 experiment1/figures/
 experiment2/data/
 experiment2/figures/
+experiment3/data/
+experiment3/figures/
 dataset/data/
 
 # Local machine-specific runner (absolute model path)
