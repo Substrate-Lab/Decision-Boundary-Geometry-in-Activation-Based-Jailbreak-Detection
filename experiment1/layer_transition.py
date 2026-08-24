@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -25,35 +24,10 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 
-CLASS_NAMES = ["Refusal", "Jailbreak", "Benign"]
-CLASS_COLORS = {
-	"Refusal": "#1ecb96",
-	"Jailbreak": "#e5484d",
-	"Benign": "#f5c518",
-}
-CHANCE_LEVEL = 1.0 / 3.0
+from common import CLASS_NAMES, load_labels, resolve_layers
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FIGURES_DIR = Path(__file__).resolve().parent / "figures"
-
-
-# Load labels.csv and return the class labels in row_index order.
-def load_labels(data_dir: Path) -> list[str]:
-	frame = pd.read_csv(data_dir / "labels.csv")
-	if "row_index" in frame.columns:
-		frame = frame.sort_values("row_index").reset_index(drop=True)
-	return frame["class_label"].tolist()
-
-
-# Use the requested layers, or fall back to the layers step1 recorded in collection_meta.json.
-def resolve_layers(data_dir: Path, requested):
-	if requested:
-		return requested
-	meta_path = data_dir / "collection_meta.json"
-	if meta_path.exists():
-		with meta_path.open(encoding="utf-8") as handle:
-			return json.load(handle).get("layers", [1, 8, 16, 24, 32])
-	return [1, 8, 16, 24, 32]
 
 
 # Reduce raw activations to a fixed number of PCA dimensions for a fair cross-layer comparison.

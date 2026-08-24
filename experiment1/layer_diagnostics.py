@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import random
 import sys
 from pathlib import Path
@@ -29,27 +28,12 @@ from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from common import load_labels_frame, resolve_layers
+
 DATA_DIR = Path(__file__).resolve().parent / "data"
 FIGURES_DIR = Path(__file__).resolve().parent / "figures"
 SEED = 0
 PROBE_DIMS = [10, 50, 100]
-
-
-# Load the labels frame in row_index order.
-def load_labels_frame(data_dir: Path) -> pd.DataFrame:
-	frame = pd.read_csv(data_dir / "labels.csv")
-	if "row_index" in frame.columns:
-		frame = frame.sort_values("row_index").reset_index(drop=True)
-	return frame
-
-
-# Use the layers step1 recorded in collection_meta.json.
-def resolve_layers(data_dir: Path):
-	meta_path = data_dir / "collection_meta.json"
-	if meta_path.exists():
-		with meta_path.open(encoding="utf-8") as handle:
-			return json.load(handle).get("layers", [])
-	return []
 
 
 # Balance a two-class index set by subsampling the larger class to the smaller count.
