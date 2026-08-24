@@ -206,7 +206,49 @@ def plot_confidence_map(points2d: np.ndarray, labels: np.ndarray, layer: int, si
 	print(f"wrote {out_path}", file=sys.stderr)
 
 
-# Fit and evaluate the multi-site power diagram for one layer, and save its power map and confidence map.
+# Render a blocky 3D confidence map: one tower per coarse cell, height = geometric margin, color = class.
+def plot_confidence_topography(points2d: np.ndarray, labels: np.ndarray, layer: int, sites_per_class: int, out_path: Path, cells: int = 26) -> None:
+	means, weights, site_classes = fit_subsites(points2d, labels, sites_per_class)
+	span = np.ptp(points2d, axis=0)
+	lo = points2d.min(axis=0) - 0.06 * span
+	hi = points2d.max(axis=0) + 0.06 * span
+	centers_x = np.linspace(lo[0], hi[0], cells)
+	centers_y = np.linspace(lo[1], hi[1], cells)
+	grid_x, grid_y = np.meshgrid(centers_x, centers_y)
+	grid = np.column_stack([grid_x.ravel(), grid_y.ravel()])
+	assigned, margin = class_margin_field(power_distances(grid, means, weights), site_classes)
+	margin = np.clip(margin, 0.0, None)
+	ceiling = np.percentile(margin, 95)
+	heights = np.clip(margin / ceiling, 0.0, 1.0) if ceiling > 0 else np.zeros_like(margin)
+
+	dx = (hi[0] - lo[0]) / cells
+	dy = (hi[1] - lo[1]) / cells
+	bar_colors = [CLASS_COLORS[name] for name in assigned]
+
+	fig = plt.figure(figsize=(8.5, 7.0))
+	ax = fig.add_subplot(111, projection="3d")
+	ax.bar3d(grid[:, 0] - dx / 2, grid[:, 1] - dy / 2, np.zeros(grid.shape[0]), dx * 0.95, dy * 0.95, heights, color=bar_colors, shade=True)
+	for name in CLASS_NAMES:
+		mask = labels == name
+		if mask.any():
+			ax.scatter(points2d[mask, 0], points2d[mask, 1], np.zeros(mask.sum()), s=6, alpha=0.5, color=CLASS_COLORS[name], label=name)
+	ax.set_xlabel("LDA-1")
+	ax.set_ylabel("LDA-2")
+	ax.set_zlabel("geometric margin (confidence)")
+	ax.set_zlim(0.0, 1.0)
+	ax.set_title(f"Layer {layer}: blocky confidence map")
+	ax.legend(loc="upper left", fontsize=8, title="predicted class (bars & dots)")
+	fig.text(
+		0.5, 0.02,
+		"KEY: bar height = confidence (geometric margin) — tall = class core, flat = on the boundary;  dots = prompt activations",
+		ha="center", fontsize=8,
+	)
+	fig.savefig(out_path, dpi=150)
+	plt.close(fig)
+	print(f"wrote {out_path}", file=sys.stderr)
+
+
+# Fit and evaluate the multi-site power diagram for one layer, and save its power map and confidence maps.
 def process_layer(layer: int, labels: np.ndarray, data_dir: Path, figures_dir: Path, pca_dims: int, sites_per_class: int) -> dict:
 	print(f"processing layer {layer}", file=sys.stderr)
 	points = raw_pca_space(layer, data_dir, pca_dims)
@@ -218,6 +260,7 @@ def process_layer(layer: int, labels: np.ndarray, data_dir: Path, figures_dir: P
 	points2d = LinearDiscriminantAnalysis(n_components=2).fit_transform(points, labels)
 	plot_power_map(points2d, labels, layer, accuracy, sites_per_class, figures_dir / f"power_map_layer{layer}.png")
 	plot_confidence_map(points2d, labels, layer, sites_per_class, figures_dir / f"power_confidence_layer{layer}.png")
+	plot_confidence_topography(points2d, labels, layer, sites_per_class, figures_dir / f"power_confidence_3d_layer{layer}.png")
 
 	return {"layer": layer, "power_accuracy": accuracy, "mean_margin": float(margin.mean()), "n_sites": len(means)}
 
