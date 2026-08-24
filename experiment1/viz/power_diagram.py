@@ -28,13 +28,11 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
-from common import CLASS_COLORS, CLASS_NAMES, load_labels, resolve_layers
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.common import CLASS_COLORS, CLASS_NAMES, DATA_DIR, FIGURES_DIR, load_labels, resolve_layers
 
 SITES_PER_CLASS = 12
 GRID_RESOLUTION = 320
-
-DATA_DIR = Path(__file__).resolve().parent / "data"
-FIGURES_DIR = Path(__file__).resolve().parent / "figures"
 
 
 # Reduce a layer's raw activations to a fixed number of PCA dimensions.

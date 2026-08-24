@@ -24,10 +24,8 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 
-from common import CLASS_NAMES, load_labels, resolve_layers
-
-DATA_DIR = Path(__file__).resolve().parent / "data"
-FIGURES_DIR = Path(__file__).resolve().parent / "figures"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.common import CLASS_NAMES, DATA_DIR, FIGURES_DIR, load_labels, resolve_layers
 
 
 # Reduce raw activations to a fixed number of PCA dimensions for a fair cross-layer comparison.

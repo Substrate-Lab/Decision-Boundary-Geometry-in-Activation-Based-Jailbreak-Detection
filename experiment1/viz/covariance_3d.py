@@ -21,12 +21,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
 
-from common import CLASS_COLORS, CLASS_NAMES, load_labels
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.common import CLASS_COLORS, CLASS_NAMES, DATA_DIR, FIGURES_DIR, load_labels
 
 DEFAULT_LAYERS = [8, 16, 24, 30, 36]
-
-DATA_DIR = Path(__file__).resolve().parent / "data"
-FIGURES_DIR = Path(__file__).resolve().parent / "figures"
 
 
 # Project a layer's raw activations to 3 PCA dimensions.

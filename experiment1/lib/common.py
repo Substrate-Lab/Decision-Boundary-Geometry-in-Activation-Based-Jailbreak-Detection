@@ -19,6 +19,10 @@ CLASS_COLORS = {
 	"Benign": "#f5c518",
 }
 
+EXPERIMENT_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = EXPERIMENT_DIR / "data"
+FIGURES_DIR = EXPERIMENT_DIR / "figures"
+
 
 # Load labels.csv in row_index order as a DataFrame.
 def load_labels_frame(data_dir: Path) -> pd.DataFrame:

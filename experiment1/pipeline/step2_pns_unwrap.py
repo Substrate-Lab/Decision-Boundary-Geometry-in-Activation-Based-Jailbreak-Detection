@@ -30,7 +30,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import minimize
 from sklearn.decomposition import PCA
 
-from common import CLASS_COLORS, load_labels, resolve_layers
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.common import CLASS_COLORS, DATA_DIR, FIGURES_DIR, load_labels, resolve_layers
 
 PCA_DIMS = 10
 SEED = 0
@@ -268,8 +269,8 @@ def main():
 	parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 	parser.add_argument("--layers", nargs="+", type=int, default=None)
 	parser.add_argument("--pca-dims", type=int, default=PCA_DIMS)
-	parser.add_argument("--data-dir", type=Path, default=Path(__file__).resolve().parent / "data")
-	parser.add_argument("--figures-dir", type=Path, default=Path(__file__).resolve().parent / "figures")
+	parser.add_argument("--data-dir", type=Path, default=DATA_DIR)
+	parser.add_argument("--figures-dir", type=Path, default=FIGURES_DIR)
 	args = parser.parse_args()
 
 	labels = load_labels(args.data_dir)
