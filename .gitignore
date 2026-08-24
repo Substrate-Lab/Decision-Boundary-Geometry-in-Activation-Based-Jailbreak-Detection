@@ -10,6 +10,8 @@ __pycache__/
 # Generated experiment outputs (activations, PNS scores, figures, HF cache)
 experiment1/data/
 experiment1/figures/
+experiment2/data/
+experiment2/figures/
 dataset/data/
 
 # Local machine-specific runner (absolute model path)
