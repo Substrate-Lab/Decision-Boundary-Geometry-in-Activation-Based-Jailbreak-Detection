@@ -47,15 +47,24 @@ step3_boundary_error.py      fit a per-class GMM reference, measure RMS boundary
                              disagreement per model (qda vs k=1 GMM is flagged degenerate)
 ```
 
-Shared helpers live in `space.py` (working representation, labels, layer resolution) and
-`discriminants.py` (the four models behind one interface).
+## Code layout
+
+```
+experiment2/
+  lib/          shared code: space.py (working representation, labels, layer resolution,
+                anchored data/output dirs) and discriminants.py (the four models)
+  pipeline/     the ordered steps: step1_boundary -> step2_margin_calibration -> step3_boundary_error
+  data/ figures/  generated outputs (gitignored)
+```
+
+Scripts run from the repo root and read the Experiment 1 activations via `lib/space.py`.
 
 ## Running
 
 ```
-python step1_boundary.py --space rawpca
-python step2_margin_calibration.py --space rawpca
-python step3_boundary_error.py --space rawpca --gmm-k 2
+python experiment2/pipeline/step1_boundary.py --space rawpca
+python experiment2/pipeline/step2_margin_calibration.py --space rawpca
+python experiment2/pipeline/step3_boundary_error.py --space rawpca --gmm-k 2
 ```
 
 Restrict with `--layers 24 30 34` and `--models power_multi qda`. Outputs (CSVs, figures) land in

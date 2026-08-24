@@ -24,14 +24,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "experiment2"))
-from space import DEFAULT_DATA_DIR, load_labels, resolve_layers, working_space
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from experiment2.lib.space import DEFAULT_DATA_DIR, load_labels, resolve_layers, working_space
 
 CLASS_COLORS = {"Refusal": "#1ecb96", "Jailbreak": "#e5484d", "Benign": "#f5c518"}
 CLASS_NAMES = ["Refusal", "Jailbreak", "Benign"]
 
-DATA_DIR = Path(__file__).resolve().parent / "data"
-FIGURES_DIR = Path(__file__).resolve().parent / "figures"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+FIGURES_DIR = Path(__file__).resolve().parents[1] / "figures"
 
 
 # Covariance participation ratio: (sum of eigenvalues)^2 over sum of squared eigenvalues.
