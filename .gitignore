@@ -18,3 +18,6 @@ dataset/data/
 
 # Local machine-specific runner (absolute model path)
 experiment1/run_local.ps1
+
+# macOS Finder metadata
+.DS_Store
