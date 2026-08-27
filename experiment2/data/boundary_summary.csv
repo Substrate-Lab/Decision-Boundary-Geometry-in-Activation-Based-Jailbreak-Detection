@@ -1,0 +1,3 @@
+space,layer,model,n_test,accuracy,mean_margin
+rawpca,30,power_multi,450,0.68,390.8922792937068
+rawpca,30,qda,450,0.7733333333333333,7.663632869720459
