@@ -18,7 +18,6 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -40,11 +39,6 @@ def short_hash(path: Path) -> str:
 		for chunk in iter(lambda: handle.read(1 << 20), b""):
 			digest.update(chunk)
 	return digest.hexdigest()[:12]
-
-
-# UTC modification time, so a re-collection is visible as a changed row.
-def modified(path: Path) -> str:
-	return datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 # Do the moments recomputed from the scores reproduce the committed sites for this layer?
@@ -93,7 +87,6 @@ def main() -> int:
 				"frame": "pns",
 				"pns_file": str(pns_path.relative_to(REPO_ROOT)),
 				"pns_sha256": short_hash(pns_path),
-				"pns_modified_utc": modified(pns_path),
 				"n_rows": int(points.shape[0]),
 				"n_dims": int(points.shape[1]),
 				"dtype": str(points.dtype),
