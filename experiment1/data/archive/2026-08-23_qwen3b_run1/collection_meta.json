@@ -1,0 +1,21 @@
+{
+  "model_id": "C:\\Users\\ethan\\models\\Qwen2.5-3B-Instruct",
+  "layers": [
+    1,
+    8,
+    16,
+    24,
+    32
+  ],
+  "hidden_dim": 2048,
+  "n_examples": 969,
+  "class_counts": {
+    "Benign": 469,
+    "Jailbreak": 336,
+    "Refusal": 164
+  },
+  "over_refusal_skipped": 31,
+  "sample_per_class": 500,
+  "seed": 0,
+  "load_in_4bit": true
+}

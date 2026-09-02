@@ -1,0 +1,232 @@
+<title>Method — Coordinate Geometry of Activation-Space Decision Boundaries</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Dense NeurIPS-style Method section: measuring the placement of the jailbreak-detection decision boundary in the residual stream.">
+<style>
+	:root{
+		--paper:#ffffff; --ink:#0d0d0f; --muted:#2b2b2f; --faint:#6a6a70;
+		--rule:#cfcfd4; --hair:#e4e4e8; --tag:#3a3a40; --link:#1b3a6b;
+		--serif:'Times New Roman', Times, Georgia, serif;
+		--mono:'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+	}
+	@media (prefers-color-scheme: dark){
+		:root{ --paper:#121317; --ink:#e9e9ec; --muted:#c2c2c8; --faint:#8b8b93;
+			--rule:#3a3b42; --hair:#26272d; --tag:#b9b9c1; --link:#8fb4e8; }
+	}
+	:root[data-theme="dark"]{ --paper:#121317; --ink:#e9e9ec; --muted:#c2c2c8; --faint:#8b8b93;
+		--rule:#3a3b42; --hair:#26272d; --tag:#b9b9c1; --link:#8fb4e8; }
+	:root[data-theme="light"]{ --paper:#ffffff; --ink:#0d0d0f; --muted:#2b2b2f; --faint:#6a6a70;
+		--rule:#cfcfd4; --hair:#e4e4e8; --tag:#3a3a40; --link:#1b3a6b; }
+
+	*{box-sizing:border-box;}
+	html{scroll-behavior:smooth;}
+	body{
+		margin:0; background:var(--paper); color:var(--ink);
+		font-family:var(--serif); font-size:9.6pt; line-height:1.42;
+		-webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+	}
+	.page{
+		max-width:760px; margin:0 auto; padding:44px 40px 90px;
+		background:var(--paper);
+	}
+	@media (min-width:1040px){
+		.page{ max-width:900px; padding:56px 60px 100px; }
+	}
+
+	/* ---- title block (full width) ---- */
+	.mast{text-align:center; padding-bottom:14px; border-bottom:1px solid var(--ink); margin-bottom:20px;}
+	.mast .stamp{font-family:var(--mono); font-size:7pt; letter-spacing:.14em; text-transform:uppercase; color:var(--faint);}
+	.mast h1{
+		font-size:16.5pt; font-weight:700; line-height:1.16; letter-spacing:-.005em;
+		margin:.7rem auto .5rem; max-width:30ch; text-wrap:balance;
+	}
+	.mast .auth{font-size:9pt; color:var(--muted); margin:.2rem 0;}
+	.mast .auth span{font-style:italic;}
+	.abs{
+		max-width:60ch; margin:14px auto 4px; text-align:justify; hyphens:auto;
+		font-size:9pt; color:var(--muted);
+	}
+	.abs b{font-variant:small-caps; letter-spacing:.03em; font-weight:700; color:var(--ink);}
+
+	/* ---- two-column body ---- */
+	.cols{
+		column-count:2; column-gap:26px; column-rule:0;
+		margin-top:20px; text-align:justify; hyphens:auto;
+	}
+	@media (max-width:720px){ .cols{column-count:1;} }
+
+	h2{
+		font-size:11pt; font-weight:700; margin:.2rem 0 .5rem; line-height:1.2;
+		break-after:avoid; letter-spacing:-.005em;
+	}
+	h2 .n{margin-right:.5em;}
+	h3{
+		font-size:9.6pt; font-weight:700; font-style:italic; margin:.95rem 0 .3rem;
+		break-after:avoid;
+	}
+	h3 .n{font-style:normal; margin-right:.5em;}
+	p{margin:0 0 .62rem;}
+	p.first{text-indent:0;}
+	.cols p + p{text-indent:1.1em;}
+	em{font-style:italic;}
+	strong{font-weight:700;}
+	.sc{font-variant:small-caps; letter-spacing:.02em;}
+	.var{font-style:italic;}
+	a{color:var(--link); text-decoration:none;}
+	a:hover{text-decoration:underline;}
+
+	/* ---- equations ---- */
+	.eqn{
+		display:flex; align-items:center; gap:10px; margin:.55rem 0; break-inside:avoid;
+	}
+	.eqn .expr{
+		flex:1; text-align:center; font-family:var(--serif); font-size:10.2pt; line-height:1.5;
+		overflow-x:auto; overflow-y:hidden; white-space:nowrap; padding:1px 0;
+	}
+	.eqn .tag{
+		font-size:9pt; color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums;
+	}
+	.wide{ column-span:all; margin:.5rem 0 .7rem; }
+	.wide .expr{white-space:normal;}
+	sub,sup{font-size:.74em; line-height:0;}
+	.op{font-style:normal;}
+
+	/* ---- compact table spanning columns ---- */
+	.tab{column-span:all; margin:.4rem 0 1rem; overflow-x:auto;}
+	table{border-collapse:collapse; width:100%; font-size:8.6pt; min-width:440px;}
+	caption{caption-side:top; text-align:left; font-size:8.4pt; color:var(--muted); padding-bottom:5px;}
+	caption b{font-weight:700; color:var(--ink);}
+	th,td{text-align:left; padding:3px 9px; border-bottom:1px solid var(--hair); vertical-align:top;}
+	thead th{border-top:1px solid var(--ink); border-bottom:1px solid var(--ink); font-weight:700; font-size:8.2pt;}
+	tbody tr:last-child td{border-bottom:1px solid var(--ink);}
+	td .m{font-family:var(--mono); font-size:7.6pt; color:var(--muted);}
+
+	ul{margin:.2rem 0 .62rem 1.05em; padding:0;}
+	li{margin:.12rem 0;}
+
+	.note{
+		break-inside:avoid; margin:.5rem 0 .7rem; padding:.55rem .7rem;
+		border:1px solid var(--rule); border-left:3px solid var(--tag); font-size:8.8pt; color:var(--muted);
+	}
+	.note b{color:var(--ink);}
+
+	.foot{
+		max-width:900px; margin:26px auto 0; padding:0 60px;
+		font-family:var(--mono); font-size:7pt; letter-spacing:.1em; text-transform:uppercase;
+		color:var(--faint); text-align:center;
+	}
+
+	.toggle{
+		position:fixed; top:16px; right:16px; z-index:20;
+		font-family:var(--mono); font-size:7pt; letter-spacing:.1em; text-transform:uppercase;
+		color:var(--muted); background:color-mix(in srgb, var(--paper) 80%, transparent);
+		backdrop-filter:blur(6px); border:1px solid var(--rule); border-radius:3px;
+		padding:.34rem .6rem; cursor:pointer;
+	}
+	.toggle:hover{color:var(--ink);}
+	:focus-visible{outline:2px solid var(--link); outline-offset:2px;}
+	@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} *{transition:none!important;} }
+</style>
+
+<button class="toggle" id="themeToggle" aria-label="Toggle light and dark theme">Theme</button>
+
+<article class="page">
+	<div class="mast">
+		<div class="stamp">Preprint · working draft · method section</div>
+		<h1>Coordinate Geometry of Activation-Space Decision Boundaries for Jailbreak Detection</h1>
+		<div class="auth"><span>Anonymous Author(s)</span></div>
+		<p class="abs"><b>Method (§3).</b> We treat the <em>placement</em> of the refusal/jailbreak decision boundary in the residual stream as the object of measurement, across three experiments. <b>E1</b> collects behaviorally-labeled last-token activations and unwraps their geometry into a spherical chart, building per-class sites. <b>E2</b> fits a family of covariance-aware partitions over those sites — from scalar-weighted power diagrams to the full-covariance (QDA) limit — and calibrates a geometric margin. <b>E3</b> benchmarks each boundary against a linear probe, measures cross-family shift, and diagnoses class geometry. All quantitative geometry is computed in a reduced Euclidean or spherical space; two-dimensional embeddings are for display only.</p>
+	</div>
+
+	<div class="cols">
+		<h2><span class="n">3</span>Method</h2>
+		<p class="first">Consider an instruction-tuned model whose residual stream has width <span class="var">d</span>. For a prompt <span class="var">p</span> we read one hidden state <span class="var">x</span>&#8202;&#8712;&#8202;&#8477;<sup><span class="var">d</span></sup> at each layer, and we label that state by <em>what the model did</em>: Refusal (R), Jailbreak (J), or Benign (B). Within the current coordinates each class has an empirical mean <span class="var">&mu;<sub>c</sub></span> and covariance <span class="var">&Sigma;<sub>c</sub></span>.</p>
+		<p>The detection question — is this activation a jailbreak? — is really a question about a <em>surface</em>. A linear probe draws that surface as a flat hyperplane whose direction is fixed by its training objective; a class-conditional method derives it instead from the statistics {<span class="var">&mu;<sub>c</sub></span>,&#8202;<span class="var">&Sigma;<sub>c</sub></span>}. The two surfaces rarely coincide, and the gap between them — how far the probe sits from the covariance-correct boundary, and how that gap grows as the class covariances diverge — is what we measure. We do so in three experiments: <strong>E1</strong> unwraps the geometry and builds the map; <strong>E2</strong> constructs the covariance-aware boundary and calibrates its margin; <strong>E3</strong> benchmarks it against baselines and diagnoses the class geometry.</p>
+
+		<h3><span class="n">3.1</span>Experiment 1: unwrapping the geometry</h3>
+		<p><em>Data and labels.</em> We draw prompts in equal quotas from four safety corpora — SORRY-Bench, WildJailbreak, ToxicChat, Aegis&#8202;2.0 — so no single jailbreak family dominates. The class is decided by <em>behavior</em>, not source label: R is a harmful prompt the model refused, J a harmful prompt it complied with, B a harmless prompt it complied with. A harmless prompt the model refuses is over-refusal; we hold it out of training and use it only as a shift test in E3. Refusal is read from the first generated tokens, which keeps generation short and batched. Since a compliant model refuses only a minority of harmful prompts, we over-sample the harmful side, label everything, then downsample to a common size — canonically <span class="var">n</span>&#8202;=&#8202;500 per class.</p>
+		<p><em>Representation.</em> The reference model is Qwen2.5-3B-Instruct (36 layers, 4-bit NF4). At every even layer <span class="var">L</span>&#8202;&#8712;&#8202;{2,&#8202;&#8230;,&#8202;36} we store the residual state of the <em>last</em> token. This matters: mean-pooling the sequence washes out the signal we rely on (inter-class covariance similarity climbs to 0.95&#8211;0.999), whereas the last-token state keeps the classes distinctly shaped. A full-width covariance is ill-posed from a few hundred points, so we first reduce each layer to <span class="var">k</span> principal components (canonically 10) — our first working space.</p>
+		<p><em>Spherical unwrapping.</em> Our central hypothesis is that the residual stream lies close to a hypersphere and that the covariance mismatch is largely <em>radial</em>. If so, discarding the radius equalizes the remaining tangential covariances, and a flat boundary — wrong in the ambient space — becomes correct once the sphere is unwrapped. We test this with a custom Principal Nested Spheres (PNS) fit [Jung et&#8202;al., 2012]: project onto <span class="var">S</span><sup><span class="var">k</span>&#8722;1</sup> and peel nested subspheres one at a time, each an axis <span class="var">v</span> and radius-angle <span class="var">r</span> chosen to hug the data,</p>
+		<div class="eqn">
+			<span class="expr">(<span class="var">v</span>,&#8202;<span class="var">r</span>) = <span class="op">argmin</span> &#8721;<sub>i</sub> ( &ang;(<span class="var">x<sub>i</sub></span>,&#8202;<span class="var">v</span>) &minus; <span class="var">r</span> )<sup>2</sup>,</span>
+			<span class="tag">(1)</span>
+		</div>
+		<p>where &ang;(<span class="var">x</span>,<span class="var">v</span>)&#8202;=&#8202;arccos&#8202;&#10216;<span class="var">x</span>,<span class="var">v</span>&#10217; is the geodesic angle. Stacking the signed residual angles from every peeled subsphere gives a Euclidean <em>PNS-score</em> representation — our second working space. In either space we then summarize each class by its <em>site</em>: the mean <span class="var">&mu;<sub>c</sub></span> and a shrunk covariance <span class="var">&Sigma;<sub>c</sub></span>. A per-layer figure placing the raw sphere beside its unwrapped version confirms the picture the boundary will exploit — Refusal collapses to a tight cap while Jailbreak fans out.</p>
+
+		<h3><span class="n">3.2</span>Experiment 2: the boundary and its margin</h3>
+		<p>For sites <span class="var">&mu;<sub>i</sub></span> with scalar weights <span class="var">w<sub>i</sub></span>, the power (Laguerre) distance and the <span class="var">i</span>/<span class="var">j</span> boundary are</p>
+		<div class="eqn">
+			<span class="expr">&pi;<sub>i</sub>(<span class="var">x</span>) = &#8214;<span class="var">x</span> &minus; <span class="var">&mu;<sub>i</sub></span>&#8214;<sup>2</sup> &minus; <span class="var">w<sub>i</sub></span>,</span>
+			<span class="tag">(2)</span>
+		</div>
+		<div class="wide eqn">
+			<span class="expr">2(<span class="var">&mu;<sub>j</sub></span> &minus; <span class="var">&mu;<sub>i</sub></span>)&#8901;<span class="var">x</span> = &#8214;<span class="var">&mu;<sub>j</sub></span>&#8214;<sup>2</sup> &minus; &#8214;<span class="var">&mu;<sub>i</sub></span>&#8214;<sup>2</sup> &minus; <span class="var">w<sub>j</sub></span> + <span class="var">w<sub>i</sub></span>.</span>
+			<span class="tag">(3)</span>
+		</div>
+		<p>The boundary (3) is a hyperplane with normal (<span class="var">&mu;<sub>j</sub></span>&minus;<span class="var">&mu;<sub>i</sub></span>); the weight <span class="var">w<sub>i</sub></span> can only slide it along that normal. We set <span class="var">w<sub>c</sub></span>&#8202;=&#8202;tr(<span class="var">&Sigma;<sub>c</sub></span>), which pushes the fence away from a diffuse class and toward a tight one. Note what a <em>single</em> site per class cannot do: the &#8214;<span class="var">x</span>&#8214;<sup>2</sup> terms in (2) cancel, the boundary stays exactly flat, and so it can never bend to the curved Bayes boundary that unequal covariances demand. To recover that curvature while staying inside the power-diagram family, we split each class into <span class="var">m</span> sub-sites by <span class="var">k</span>-means (canonically <span class="var">m</span>&#8202;=&#8202;12), give each its own weight, and score a class by its nearest sub-site,</p>
+		<div class="eqn">
+			<span class="expr"><span class="var">s<sub>c</sub></span>(<span class="var">x</span>) = <span class="op">min</span><sub><span class="var">s</span>&#8712;<span class="var">c</span></sub> ( &#8214;<span class="var">x</span> &minus; <span class="var">&mu;<sub>s</sub></span>&#8214;<sup>2</sup> &minus; <span class="var">w<sub>s</sub></span> ),</span>
+			<span class="tag">(4)</span>
+		</div>
+		<p>The resulting inter-class boundary is piecewise linear — a union of hyperplane facets that approximates a curved surface while remaining a genuine Laguerre partition with locally convex cells. A tempting alternative is to fold the whole covariance into the distance,</p>
+		<div class="eqn">
+			<span class="expr"><span class="var">P<sub>c</sub></span>(<span class="var">x</span>) = (<span class="var">x</span>&minus;<span class="var">&mu;<sub>c</sub></span>)<sup>&#8868;</sup> <span class="var">&Sigma;<sub>c</sub></span><sup>&minus;1</sup> (<span class="var">x</span>&minus;<span class="var">&mu;<sub>c</sub></span>) + log&#8202;det&#8202;<span class="var">&Sigma;<sub>c</sub></span>,</span>
+			<span class="tag">(5)</span>
+		</div>
+		<p>We include (5) in the comparison, but we call it what it is: this is exactly quadratic discriminant analysis (QDA). Its boundary is the quadric <span class="var">P<sub>A</sub></span>&#8202;=&#8202;<span class="var">P<sub>B</sub></span>, and its cells need not be convex. The distinction matters, because the Alexandrov&#8211;Minkowski theorem certifies a unique, mass-correct optimal-transport partition only for the <em>scalar-weight</em> diagrams (2)&#8211;(4); it says nothing about the full-covariance form. All covariances use Ledoit&#8211;Wolf shrinkage so <span class="var">&Sigma;</span><sup>&minus;1</sup> and log&#8202;det&#8202;<span class="var">&Sigma;</span> stay defined at small <span class="var">n</span>. <em>Why a nonlinear chart is necessary:</em> two SPD covariances can always be simultaneously diagonalized, but simultaneously <em>whitened</em> only when <span class="var">&Sigma;<sub>i</sub></span>&#8202;&#8733;&#8202;<span class="var">&Sigma;<sub>j</sub></span>. A linear map can shrink the mismatch to a spectrum of eigenvalue ratios but never set it to one — so if covariance mismatch is what displaces the boundary, removing it requires the nonlinear chart of E1, not a cleverer linear reparameterization.</p>
+
+		<div class="tab">
+			<table>
+				<caption><b>Table 1.</b> The discriminant family evaluated across E2&#8211;E3. Only the scalar-weight forms are true power diagrams carrying the optimal-transport guarantee.</caption>
+				<thead><tr><th>Discriminant</th><th>Boundary</th><th>Power diagram / OT</th></tr></thead>
+				<tbody>
+					<tr><td>LDA (pooled &Sigma;)</td><td class="m">linear</td><td>no (covariance-blind ref.)</td></tr>
+					<tr><td>power, single-site</td><td class="m">linear</td><td>yes</td></tr>
+					<tr><td>power, multi-site</td><td class="m">piecewise-linear</td><td>yes</td></tr>
+					<tr><td>full-covariance (QDA)</td><td class="m">quadric</td><td>no (this is QDA)</td></tr>
+				</tbody>
+			</table>
+		</div>
+
+		<p><em>Margin.</em> Sorting a point's class scores from smallest to largest, we assign it to the smallest and read its confidence off the gap to the runner-up,</p>
+		<div class="eqn">
+			<span class="expr"><span class="var">&gamma;</span>(<span class="var">x</span>) = <span class="var">s</span><sub>(2)</sub>(<span class="var">x</span>) &minus; <span class="var">s</span><sub>(1)</sub>(<span class="var">x</span>),</span>
+			<span class="tag">(6)</span>
+		</div>
+		<p>A large <span class="var">&gamma;</span> means the point sits deep inside its cell; a small one means it sits on the boundary. For a power diagram this is a signed power-distance gap; for QDA a log-likelihood-ratio gap. Because these margins are unbounded and vary in scale across layers and methods, we rank-normalize each to a confidence in [0,1] within its run, bin it, and compare bin confidence to bin accuracy through the expected calibration error,</p>
+		<div class="eqn">
+			<span class="expr"><span class="sc">ECE</span> = &#8721;<sub>b</sub> (<span class="var">n<sub>b</sub></span>&#8202;/&#8202;<span class="var">n</span>) &#8901; | acc(<span class="var">b</span>) &minus; conf(<span class="var">b</span>) |;</span>
+			<span class="tag">(7)</span>
+		</div>
+		<p>We do not expect the in-distribution ECE to separate the methods; the property we want is whether the margin stays honest <em>under distribution shift</em>. <em>How far is the boundary from correct?</em> To place a boundary we need a reference to place it against. We fit a per-class Gaussian mixture (<span class="var">g</span> components, canonically <span class="var">g</span>&#8202;=&#8202;2) as that reference and take its class-likelihood crossing as the reference boundary. Walking along the segment joining two class means, we find where the method flips its preference (<span class="var">t</span><sub>m</sub>) and where the reference flips its own (<span class="var">t</span><sub>r</sub>), and report the RMS displacement between the two crossings, scaled by the distance between the means,</p>
+		<div class="eqn">
+			<span class="expr">&#949;<sub>b</sub> = &#8730;( &#8721;<sub>(<span class="var">a</span>,<span class="var">b</span>)</sub> [ (<span class="var">t</span><sub>m</sub>&minus;<span class="var">t</span><sub>r</sub>)&#8901;&#8214;<span class="var">&mu;<sub>a</sub></span>&minus;<span class="var">&mu;<sub>b</sub></span>&#8214; ]<sup>2</sup> ),</span>
+			<span class="tag">(8)</span>
+		</div>
+		<p>Alongside &#949;<sub>b</sub> we report a scale-free companion — the fraction of points the method and reference assign to different cells — since it, unlike &#949;<sub>b</sub>, is comparable across coordinate systems. One case is deliberately excluded: when the method is QDA and the reference is a single Gaussian per class (<span class="var">g</span>&#8202;=&#8202;1), the two are the same object and &#949;<sub>b</sub>&#8776;0 for trivial reasons. The pipeline flags exactly that configuration and never counts it as a win.</p>
+
+		<h3><span class="n">3.3</span>Experiment 3: benchmarks and diagnostics</h3>
+		<p>We turn each discriminant into a binary detector that emits one score for the positive class, and compare them all under a single ROC-AUC against two baselines: a logistic-regression <em>linear probe</em> (the standard activation detector) and a <em>plain Voronoi</em> classifier (nearest class mean, no weight). The primary task is Jailbreak-vs-Benign — the hard pair, since both are compliance and overlap heavily — scored by stratified 5-fold AUC at each layer. Plotting AUC against depth gives the decisive test: does the geometry method's advantage over the flat probe <em>widen</em> in the late layers, where the boundary is most misplaced? Two further probes round this out. <em>Cross-family</em> transfer leaves one source corpus out, trains on the other three, and reports the drop from in-distribution to held-out AUC — a direct measure of how each detector survives an unseen attack style. The <em>fractal diagnostic</em> measures each class's effective number of spread directions with the covariance participation ratio,</p>
+		<div class="eqn">
+			<span class="expr"><span class="var">D</span> = tr(<span class="var">&Sigma;</span>)<sup>2</sup> / &#8214;<span class="var">&Sigma;</span>&#8214;<sub>F</sub><sup>2</sup> = (&#8721;<sub>i</sub>&#8202;&lambda;<sub>i</sub>)<sup>2</sup> / &#8721;<sub>i</sub>&#8202;&lambda;<sub>i</sub><sup>2</sup></span>
+			<span class="tag">(9)</span>
+		</div>
+		<p>and tests the prediction that the diffuse class occupies far more directions than the tight one, <span class="var">D</span>(J)&#8202;&#8811;&#8202;<span class="var">D</span>(R). We use this ratio rather than box-counting, which is unstable in high dimension with few points. Every boundary in E2&#8211;E3 is fit in both the raw-PCA and PNS spaces, so the coordinate-dependence at the heart of the paper is measured, not assumed. Layer stability — the depth at which AUC levels off — is read directly from the AUC-versus-depth curve and reported as an early-exit safety horizon. Finally, every source of randomness (PCA, <span class="var">k</span>-means, the mixtures, and all splits) uses a fixed seed, and collection (E1) is kept separate from analysis (E2&#8211;E3) so every geometric result reproduces on CPU from the saved activations.</p>
+
+		<div class="note">
+			<b>Scope of the construction.</b> Two claims are kept separate. (i) The optimal-transport / convex-cell guarantee holds for the scalar-weight diagrams (2)&#8211;(4), not for the full-covariance form (5), which is QDA. (ii) Whether the covariance-aware boundary <em>beats</em> a linear probe, and in which coordinate system, is empirical — decided by E3, not entailed by the construction. We report AUC-vs-layer and cross-family curves in both spaces and let them adjudicate the framing.
+		</div>
+	</div>
+</article>
+
+<div class="foot">Method draft · Power-Diagram Decision Boundaries for Jailbreak Detection · internal preprint</div>
+
+<script>
+	(function(){
+		var root = document.documentElement, btn = document.getElementById('themeToggle');
+		btn.addEventListener('click', function(){
+			var bg = getComputedStyle(root).getPropertyValue('--paper').trim().toLowerCase();
+			var dark = bg.indexOf('#12') === 0;
+			root.setAttribute('data-theme', dark ? 'light' : 'dark');
+		});
+	})();
+</script>

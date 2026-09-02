@@ -1,0 +1,62 @@
+{
+  "model_id": "C:\\Users\\ethan\\models\\Qwen2.5-3B-Instruct",
+  "layers": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30,
+    32,
+    34,
+    36
+  ],
+  "hidden_dim": 2048,
+  "per_class_target": 500,
+  "balanced_per_class": 500,
+  "n_balanced": 1500,
+  "n_full": 2027,
+  "balanced_class_counts": {
+    "Benign": 500,
+    "Refusal": 500,
+    "Jailbreak": 500
+  },
+  "full_class_counts": {
+    "Benign": 627,
+    "Refusal": 692,
+    "Jailbreak": 708
+  },
+  "over_refusal_skipped": 73,
+  "harmful_pool": 1400,
+  "benign_pool": 700,
+  "batch_size": 4,
+  "max_new_tokens": 24,
+  "safety_prompt": false,
+  "pooling": "mean",
+  "pool_counts": {
+    "harmful_by_dataset": {
+      "sorry-bench": 440,
+      "wildjailbreak": 132778,
+      "toxic-chat": 746,
+      "aegis-2.0": 19643
+    },
+    "benign_by_dataset": {
+      "wildjailbreak": 128781,
+      "toxic-chat": 9419,
+      "aegis-2.0": 13771
+    },
+    "drawn_harmful": 1400,
+    "drawn_benign": 700
+  },
+  "seed": 0,
+  "load_in_4bit": true
+}

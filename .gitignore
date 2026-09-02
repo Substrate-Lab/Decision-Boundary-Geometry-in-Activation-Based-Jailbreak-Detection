@@ -8,12 +8,12 @@ __pycache__/
 *.pyc
 
 # Generated experiment outputs (activations, PNS scores, figures, HF cache)
-experiment1/data/
-experiment1/figures/
-experiment2/data/
-experiment2/figures/
-experiment3/data/
-experiment3/figures/
+# Raw activation arrays only (4.3 GB) -- too large for git.
+# Derived results (CSVs, pns_*.npy, sites_*.npz, analytics) and figures ARE tracked,
+# and are regenerable from the activations via experiment1 step2/step3.
+experiment1/data/**/activations*.npy
+experiment2/data/**/activations*.npy
+experiment3/data/**/activations*.npy
 dataset/data/
 
 # Local machine-specific runner (absolute model path)

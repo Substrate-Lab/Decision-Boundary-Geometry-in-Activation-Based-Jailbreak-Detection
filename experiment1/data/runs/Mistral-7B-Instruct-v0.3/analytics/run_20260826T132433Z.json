@@ -1,0 +1,405 @@
+{
+  "run_id": "20260826T132433Z",
+  "model_id": "mistralai/Mistral-7B-Instruct-v0.3",
+  "per_class_target": 500,
+  "balanced_per_class": 129,
+  "safety_prompt": false,
+  "load_in_4bit": true,
+  "layers": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30,
+    32
+  ],
+  "seed": 0,
+  "environment": {
+    "python_version": "3.11.9",
+    "torch_version": "2.11.0+cu128",
+    "transformers_version": "5.15.1",
+    "cuda_available": true,
+    "gpu_name": "NVIDIA GeForce RTX 5070 Laptop GPU",
+    "gpu_capability": "12.0",
+    "total_vram_gb": 7.95953369140625
+  },
+  "timings": {
+    "gather_prompts": 19.659909100009827,
+    "load_model": 2099.9572688000044,
+    "run_collection": 2164.3447763000004
+  },
+  "balanced_class_counts": {
+    "Refusal": 129,
+    "Jailbreak": 129,
+    "Benign": 129
+  },
+  "labels_summary": {
+    "n_total": 2078,
+    "class_counts": {
+      "Refusal": 129,
+      "Jailbreak": 1271,
+      "Benign": 678
+    },
+    "n_harmful_prompts": 1400,
+    "n_benign_prompts": 678,
+    "per_dataset_counts": {
+      "aegis-2.0": 570,
+      "wildjailbreak": 578,
+      "toxic-chat": 580,
+      "sorry-bench": 350
+    },
+    "dataset_by_class": {
+      "aegis-2.0": {
+        "Refusal": 52,
+        "Jailbreak": 298,
+        "Benign": 220
+      },
+      "wildjailbreak": {
+        "Refusal": 31,
+        "Jailbreak": 319,
+        "Benign": 228
+      },
+      "toxic-chat": {
+        "Refusal": 21,
+        "Jailbreak": 329,
+        "Benign": 230
+      },
+      "sorry-bench": {
+        "Refusal": 25,
+        "Jailbreak": 325,
+        "Benign": 0
+      }
+    },
+    "refusal_rate_overall": 0.062078922040423486,
+    "refusal_rate_harmful": 0.09214285714285714,
+    "refusal_rate_by_dataset": {
+      "aegis-2.0": 0.0912280701754386,
+      "wildjailbreak": 0.05363321799307959,
+      "toxic-chat": 0.03620689655172414,
+      "sorry-bench": 0.07142857142857142
+    },
+    "refusal_rate_by_source_category": {
+      "benign": 0.0,
+      "harmful": 0.10285714285714286,
+      "toxic": 0.06
+    },
+    "jailbreak_compliance_rate": 0.9078571428571428,
+    "prompt_char_len": {
+      "p50": 112.0,
+      "p90": 962.3,
+      "max": 8584.0,
+      "mean": 342.2083734359961
+    },
+    "response_char_len": {
+      "p50": 99.0,
+      "p90": 124.0,
+      "max": 168.0,
+      "mean": 97.37921077959577
+    }
+  },
+  "activation_geometry": {
+    "2": {
+      "Refusal": {
+        "mean_norm": 0.32618846417253167,
+        "std_norm": 0.040832372603930994,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 0.34978377974773855,
+        "std_norm": 0.04015877824405567,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 0.33660009755464965,
+        "std_norm": 0.04702648304534079,
+        "n": 129
+      }
+    },
+    "4": {
+      "Refusal": {
+        "mean_norm": 0.6311103212782511,
+        "std_norm": 0.04172715967827209,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 0.6449860482673148,
+        "std_norm": 0.04388686916395094,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 0.6503265341109784,
+        "std_norm": 0.04047254128296882,
+        "n": 129
+      }
+    },
+    "6": {
+      "Refusal": {
+        "mean_norm": 1.1562717852056974,
+        "std_norm": 0.0547591535198985,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 1.1736528479915682,
+        "std_norm": 0.05471686162778729,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 1.1719906330581267,
+        "std_norm": 0.05803973641081559,
+        "n": 129
+      }
+    },
+    "8": {
+      "Refusal": {
+        "mean_norm": 2.0538733486265555,
+        "std_norm": 0.07664917579228445,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 2.063850975476285,
+        "std_norm": 0.08519266551296555,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 2.0633479357094706,
+        "std_norm": 0.07080498096746554,
+        "n": 129
+      }
+    },
+    "10": {
+      "Refusal": {
+        "mean_norm": 2.5017579741194194,
+        "std_norm": 0.08724480856057386,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 2.5339250586006283,
+        "std_norm": 0.08829702113945431,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 2.5306742476692983,
+        "std_norm": 0.08617375116967511,
+        "n": 129
+      }
+    },
+    "12": {
+      "Refusal": {
+        "mean_norm": 3.3339771896728365,
+        "std_norm": 0.16587107190523656,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 3.372632368895131,
+        "std_norm": 0.13119430882119487,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 3.3226841064731625,
+        "std_norm": 0.1386199758250148,
+        "n": 129
+      }
+    },
+    "14": {
+      "Refusal": {
+        "mean_norm": 4.326680031844854,
+        "std_norm": 0.26234376302520496,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 4.367389729569832,
+        "std_norm": 0.19375013580239583,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 4.30029873137487,
+        "std_norm": 0.1808224008870851,
+        "n": 129
+      }
+    },
+    "16": {
+      "Refusal": {
+        "mean_norm": 5.62007074694061,
+        "std_norm": 0.3626371641439316,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 5.717115533075597,
+        "std_norm": 0.30033066430242766,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 5.591994491260167,
+        "std_norm": 0.31740594872430106,
+        "n": 129
+      }
+    },
+    "18": {
+      "Refusal": {
+        "mean_norm": 7.545019596509976,
+        "std_norm": 0.5106485348570826,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 7.502146226093983,
+        "std_norm": 0.3612488557427989,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 7.433618399899722,
+        "std_norm": 0.39563951477613624,
+        "n": 129
+      }
+    },
+    "20": {
+      "Refusal": {
+        "mean_norm": 10.00912352994184,
+        "std_norm": 0.5365092984481289,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 10.108763536333916,
+        "std_norm": 0.45310896127066763,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 10.12245382399373,
+        "std_norm": 0.5865171035584698,
+        "n": 129
+      }
+    },
+    "22": {
+      "Refusal": {
+        "mean_norm": 11.488393867572922,
+        "std_norm": 0.4762630747803971,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 11.571138670768354,
+        "std_norm": 0.526360528967264,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 11.638849381655772,
+        "std_norm": 0.6429733229137313,
+        "n": 129
+      }
+    },
+    "24": {
+      "Refusal": {
+        "mean_norm": 13.009142448679064,
+        "std_norm": 0.49555335393633115,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 13.097969626853832,
+        "std_norm": 0.643673722365443,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 13.129472453130694,
+        "std_norm": 0.7402663277360191,
+        "n": 129
+      }
+    },
+    "26": {
+      "Refusal": {
+        "mean_norm": 14.894553172259338,
+        "std_norm": 0.5445743912891533,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 14.858339500679556,
+        "std_norm": 0.7281238803865223,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 15.014111961983044,
+        "std_norm": 0.8677643217037985,
+        "n": 129
+      }
+    },
+    "28": {
+      "Refusal": {
+        "mean_norm": 17.37969787606897,
+        "std_norm": 0.60158609223706,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 17.490357948384418,
+        "std_norm": 0.8486527455810373,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 17.77023500021643,
+        "std_norm": 0.9784306660016595,
+        "n": 129
+      }
+    },
+    "30": {
+      "Refusal": {
+        "mean_norm": 22.618788434409687,
+        "std_norm": 0.8210255201262455,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 22.967525310709295,
+        "std_norm": 0.9928729177261238,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 23.395020016552134,
+        "std_norm": 1.2223533200906755,
+        "n": 129
+      }
+    },
+    "32": {
+      "Refusal": {
+        "mean_norm": 354.9427480115811,
+        "std_norm": 2.532870858813611,
+        "n": 129
+      },
+      "Jailbreak": {
+        "mean_norm": 355.148655497874,
+        "std_norm": 2.5152096886271003,
+        "n": 129
+      },
+      "Benign": {
+        "mean_norm": 355.43109460660065,
+        "std_norm": 3.5039787248242913,
+        "n": 129
+      }
+    }
+  },
+  "gpu": {
+    "peak_alloc_gb": 5.030574321746826,
+    "peak_reserved_gb": 5.294921875
+  },
+  "pool_counts": {
+    "harmful_by_dataset": {
+      "sorry-bench": 440,
+      "wildjailbreak": 132778,
+      "toxic-chat": 746,
+      "aegis-2.0": 19643
+    },
+    "benign_by_dataset": {
+      "wildjailbreak": 128781,
+      "toxic-chat": 9419,
+      "aegis-2.0": 13771
+    },
+    "drawn_harmful": 1400,
+    "drawn_benign": 700
+  },
+  "datasets_skipped": [],
+  "over_refusal_skipped": 22
+}

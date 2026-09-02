@@ -1,0 +1,270 @@
+%=====================================================================
+%  Method section --- full standalone LaTeX (compiles as-is).
+%
+%  This document uses the standard `article' class in two-column mode so
+%  it builds anywhere with no external style file.  For the real NeurIPS
+%  submission, delete the \documentclass line and the \geometry line
+%  below and use instead:
+%       \documentclass{article}
+%       \usepackage[final]{neurips_2024}
+%  then keep everything from \begin{document} onward unchanged.
+%=====================================================================
+\documentclass[10pt,twocolumn]{article}
+
+\usepackage[letterpaper,margin=0.85in,columnsep=0.28in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\tr}{tr}
+\newcommand{\R}{\mathrm{R}}   % Refusal
+\newcommand{\J}{\mathrm{J}}   % Jailbreak
+\newcommand{\B}{\mathrm{B}}   % Benign
+
+\begin{document}
+
+% Full-width title + abstract spanning both columns (standalone-safe).
+% With the neurips class, replace this \twocolumn[...] block with the usual
+% \maketitle and \begin{abstract}...\end{abstract}.
+\twocolumn[{%
+  \begin{center}
+    {\LARGE\bfseries Coordinate Geometry of Activation-Space
+      Decision Boundaries for Jailbreak Detection\par}
+    \vspace{0.35em}
+    {\large\itshape Method\par}
+    \vspace{0.6em}
+    {\normalsize Anonymous Author(s)\par}
+  \end{center}
+  \vspace{0.4em}
+  \begin{center}
+  \begin{minipage}{0.86\textwidth}
+    \small\noindent\textbf{Abstract.}\ \
+    We treat the \emph{placement} of the refusal/jailbreak decision boundary in a language
+    model's residual stream as the object of measurement, and study it in three experiments.
+    Experiment~1 collects behaviorally-labeled last-token activations and unwraps their geometry
+    into a spherical chart, yielding one site per class. Experiment~2 fits a family of
+    covariance-aware partitions over those sites---ranging from scalar-weighted power diagrams to
+    the full-covariance (QDA) limit---and calibrates a geometric margin. Experiment~3 benchmarks
+    each boundary against a linear probe, measures how it transfers to unseen attack families, and
+    diagnoses the class geometry. Throughout, all quantitative geometry is computed in a reduced
+    Euclidean or spherical space; two-dimensional embeddings are used only for display.
+  \end{minipage}
+  \end{center}
+  \vspace{1.2em}
+}]
+
+\section{Method}
+\label{sec:method}
+
+Consider an instruction-tuned language model whose residual stream has width $d$. For a prompt
+$p$ we read off a single hidden state $x \in \mathbb{R}^{d}$ at each layer, and we label that
+state by \emph{what the model did}: Refusal ($\R$), Jailbreak ($\J$), or Benign ($\B$). Within
+whatever coordinate system we are currently using, each class has an empirical mean $\mu_c$ and
+covariance $\Sigma_c$.
+
+The detection question---is this activation a jailbreak?---is really a question about a
+surface. A linear probe draws that surface as a flat hyperplane, and the direction of the
+hyperplane is fixed by the discriminative objective it was trained on. A class-conditional
+method instead derives the surface from the class statistics $\{\mu_c, \Sigma_c\}$. These two
+surfaces rarely coincide, and the quantity we care about is the gap between them: how far the
+probe's hyperplane sits from the covariance-correct boundary, and how that gap grows as the
+class covariances diverge. The three experiments below are built to make that gap measurable.
+
+\subsection{Experiment 1: unwrapping the geometry}
+\label{sec:e1}
+
+\paragraph{Data and labels.}
+We draw prompts in equal quotas from four safety corpora---SORRY-Bench, WildJailbreak,
+ToxicChat, and Aegis~2.0---so that no single jailbreak family dominates the sample. Crucially,
+the class of an example is decided by \emph{behavior}, not by its source label: $\R$ is a
+harmful prompt the model refused, $\J$ a harmful prompt it complied with, and $\B$ a harmless
+prompt it complied with. A harmless prompt that the model refuses is over-refusal; we hold it
+out of the training partition and use it only as a stress test in Experiment~3. Refusal is
+detected from the first few generated tokens, which lets us keep generation short and batched.
+Because a compliant model refuses only a minority of harmful prompts, we over-sample the
+harmful side, label everything behaviorally, and then downsample to a common class
+size---canonically $n = 500$ per class.
+
+\paragraph{Representation.}
+Our reference model is Qwen2.5-3B-Instruct (36 layers, loaded in 4-bit NF4). At every even
+layer $L \in \{2, 4, \dots, 36\}$ we store the residual state of the \emph{last} token. This
+choice matters: mean-pooling the sequence washes out the very signal we rely on, driving the
+inter-class covariance similarity to $0.95$--$0.999$, whereas the last-token state keeps the
+classes distinctly shaped. Estimating a full-width covariance from a few hundred points is
+ill-posed, so we first reduce each layer to $k$ principal components (canonically $k = 10$).
+This reduced Euclidean space is our first working coordinate system.
+
+\paragraph{Spherical unwrapping.}
+Our central hypothesis is that the residual stream lies close to a hypersphere, and that the
+mismatch between class covariances is largely \emph{radial}. If that is true, then discarding
+the radius should equalize the remaining (tangential) covariances---and a flat boundary, wrong
+in the ambient space, becomes correct once the sphere is unwrapped. We test this with a custom
+implementation of Principal Nested Spheres (PNS)~\citep{jung2012pns}. After projecting the
+points onto the unit sphere $S^{k-1}$, we peel off nested subspheres one at a time; each
+subsphere is an axis $v$ and a radius-angle $r$ chosen to hug the data,
+\begin{equation}
+  (v, r) \;=\; \argmin_{v, r}\ \sum_i \big(\angle(x_i, v) - r\big)^2 ,
+  \label{eq:pns}
+\end{equation}
+where $\angle(x, v) = \arccos\langle x, v\rangle$ is the geodesic angle. Stacking the signed
+residual angles from every peeled subsphere gives a Euclidean \emph{PNS-score} representation,
+our second working coordinate system. In either space we then summarize each class by its
+\emph{site}: the mean $\mu_c$ and a shrunk covariance $\Sigma_c$. A per-layer figure that places
+the raw sphere beside its unwrapped version confirms the picture the boundary will exploit:
+Refusal collapses to a tight cap, while Jailbreak fans out.
+
+\subsection{Experiment 2: the boundary and its margin}
+\label{sec:e2}
+
+Given sites $\mu_i$ with scalar weights $w_i$, the power (Laguerre) distance and the boundary
+between sites $i$ and $j$ are
+\begin{align}
+  \pi_i(x) &= \|x - \mu_i\|^2 - w_i , \label{eq:power}\\
+  2(\mu_j - \mu_i)\!\cdot\! x &= \|\mu_j\|^2 - \|\mu_i\|^2 - w_j + w_i . \label{eq:hyper}
+\end{align}
+The boundary in \eqref{eq:hyper} is a hyperplane whose normal is $(\mu_j - \mu_i)$; the weight
+$w_i$ can only slide it back and forth along that normal. We set $w_c = \tr(\Sigma_c)$, which
+pushes the fence away from a diffuse class and toward a tight one. Note what a \emph{single}
+site per class cannot do: the $\|x\|^2$ terms in \eqref{eq:power} cancel, the boundary stays
+exactly flat, and so it can never bend to match the curved Bayes boundary that unequal
+covariances demand. To recover that curvature while staying within the power-diagram family, we
+split each class into $m$ sub-sites by $k$-means (canonically $m = 12$), give each its own
+scalar weight, and score a class by its nearest sub-site,
+\begin{equation}
+  s_c(x) = \min_{s \in c}\big( \|x - \mu_s\|^2 - w_s \big).
+  \label{eq:multisite}
+\end{equation}
+The resulting inter-class boundary is piecewise linear: a union of hyperplane facets that
+approximates a curved surface while remaining a genuine Laguerre partition with locally convex
+cells.
+
+A tempting alternative is to fold the whole covariance into the distance,
+\begin{equation}
+  P_c(x) = (x - \mu_c)^{\!\top} \Sigma_c^{-1} (x - \mu_c) + \log\det \Sigma_c .
+  \label{eq:qda}
+\end{equation}
+We include \eqref{eq:qda} in our comparison, but we are careful to call it what it is: this is
+exactly quadratic discriminant analysis (QDA). Its boundary is the quadric $P_A = P_B$, and its
+cells need not be convex. The distinction matters because the Alexandrov--Minkowski theorem
+certifies a unique, mass-correct optimal-transport partition only for the \emph{scalar-weight}
+diagrams \eqref{eq:power}--\eqref{eq:multisite}; it says nothing about the full-covariance form.
+All covariances are estimated with Ledoit--Wolf shrinkage so that $\Sigma^{-1}$ and $\log\det
+\Sigma$ remain well-defined at small $n$. Table~\ref{tab:family} lists the family.
+
+\emph{Why a nonlinear chart is necessary.} Two symmetric positive-definite covariances can
+always be simultaneously diagonalized, but they can be simultaneously \emph{whitened} only when
+$\Sigma_i \propto \Sigma_j$. A linear change of coordinates can therefore shrink the mismatch to
+a spectrum of eigenvalue ratios, but it can never set that spectrum to one. If covariance
+mismatch is what displaces the boundary, then removing it requires the nonlinear chart of
+Experiment~1---not a cleverer linear reparameterization.
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{The discriminant family compared in Experiments~2--3. Only the scalar-weight forms
+  are true power diagrams and carry the optimal-transport guarantee.}
+  \label{tab:family}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Discriminant & Boundary & Power diagram / OT \\
+    \midrule
+    LDA (pooled $\Sigma$)  & linear            & no (covariance-blind ref.) \\
+    Power, single-site     & linear            & yes \\
+    Power, multi-site      & piecewise-linear  & yes \\
+    Full-covariance (QDA)  & quadric           & no (this is QDA) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Margin.}
+Sorting a point's class scores from smallest to largest, we assign it to the smallest and read
+its confidence off the gap to the runner-up,
+\begin{equation}
+  \gamma(x) = s_{(2)}(x) - s_{(1)}(x).
+  \label{eq:margin}
+\end{equation}
+A large $\gamma$ means the point sits deep inside its cell; a small one means it sits on the
+boundary. For a power diagram this is a signed power-distance gap; for QDA it is a
+log-likelihood-ratio gap. Because these margins are unbounded and vary in scale across layers and
+methods, we rank-normalize each to a confidence in $[0,1]$ within its run, bin the confidence,
+and compare bin confidence to bin accuracy through the expected calibration error,
+\begin{equation}
+  \mathrm{ECE} = \sum_b \frac{n_b}{n}\,\big|\operatorname{acc}(b) - \operatorname{conf}(b)\big|.
+  \label{eq:ece}
+\end{equation}
+We do not expect the in-distribution ECE to separate the methods; the property we are after is
+whether the margin stays honest \emph{under distribution shift}.
+
+\paragraph{How far is the boundary from correct?}
+To say a boundary is well placed we need a reference to place it against. We fit a per-class
+Gaussian mixture ($g$ components, canonically $g = 2$) as that reference, and take its
+class-likelihood crossing as the reference boundary. Walking along the segment that joins two
+class means, we find where the method flips its preference ($t_m$) and where the reference flips
+its own ($t_r$), and report the RMS displacement between the two crossings, scaled by the
+distance between the means,
+\begin{equation}
+  \varepsilon_b = \sqrt{\ \sum_{(a,b)} \Big[(t_m - t_r)\,\|\mu_a - \mu_b\|\Big]^2 }.
+  \label{eq:rms}
+\end{equation}
+Alongside $\varepsilon_b$ we report a scale-free companion---the fraction of points that the
+method and the reference assign to different cells---since it, unlike $\varepsilon_b$, is
+comparable across coordinate systems. One case is deliberately excluded: when the method is QDA
+and the reference is a single Gaussian per class ($g = 1$), the two are the same object and
+$\varepsilon_b \approx 0$ for trivial reasons. Our pipeline flags exactly this configuration and
+never counts it as a win.
+
+\subsection{Experiment 3: benchmarks and diagnostics}
+\label{sec:e3}
+
+We turn each discriminant into a binary detector that emits one score for the positive class, and
+compare them all under a single ROC-AUC against two baselines: a logistic-regression
+\emph{linear probe}, the standard activation detector, and a \emph{plain Voronoi} classifier
+(nearest class mean, no covariance weight). The primary task is Jailbreak versus Benign---the
+hard pair, since both are compliance and overlap heavily---scored by stratified 5-fold AUC at
+each layer. Plotting AUC against depth gives the paper's decisive test: does the geometry
+method's advantage over the flat probe \emph{widen} in the late layers, where the boundary is
+most misplaced?
+
+Two further probes round out the picture. For \emph{cross-family} transfer we leave one source
+corpus out, train on the remaining three, and report the drop from in-distribution to held-out
+AUC as a direct measure of how each detector survives an unseen attack style. For the
+\emph{fractal diagnostic} we measure each class's effective number of spread directions with the
+covariance participation ratio,
+\begin{equation}
+  D = \frac{\tr(\Sigma)^2}{\|\Sigma\|_F^2}
+    = \frac{\big(\sum_i \lambda_i\big)^2}{\sum_i \lambda_i^2},
+  \label{eq:frac}
+\end{equation}
+and test the prediction that the diffuse class occupies many more directions than the tight one,
+$D(\J) \gg D(\R)$. We use \eqref{eq:frac} rather than box-counting, which is unstable in high
+dimension with few points.
+
+Every boundary in Experiments~2--3 is fit in both the raw-PCA space and the PNS space, so that
+the coordinate-dependence at the heart of the paper is measured rather than assumed. Layer
+stability---the depth at which AUC levels off---is read directly from the AUC-versus-depth curve
+and reported as an early-exit safety horizon. Finally, every source of randomness (PCA, $k$-means,
+the mixtures, and all data splits) uses a fixed seed, and collection (Experiment~1) is kept
+separate from analysis (Experiments~2--3) so that every geometric result can be reproduced on CPU
+from the saved activations.
+
+\paragraph{Scope of the construction.}
+We keep two claims apart. First, the optimal-transport and convex-cell guarantees hold for the
+scalar-weight power diagrams in \eqref{eq:power}--\eqref{eq:multisite}, but not for the
+full-covariance form in \eqref{eq:qda}, which is QDA. Second, whether a covariance-aware boundary
+actually \emph{beats} a linear probe---and in which coordinate system---is an empirical matter
+that Experiment~3 decides; it is not guaranteed by the construction. We therefore report the
+AUC-versus-depth and cross-family curves in both spaces and let the measurements settle the
+framing.
+
+%---------------------------------------------------------------------
+\begin{thebibliography}{1}
+\small
+\bibitem{jung2012pns}
+S.~Jung, I.~L. Dryden, and J.~S. Marron.
+\newblock Analysis of principal nested spheres.
+\newblock \emph{Biometrika}, 99(3):551--568, 2012.
+\end{thebibliography}
+
+\end{document}
