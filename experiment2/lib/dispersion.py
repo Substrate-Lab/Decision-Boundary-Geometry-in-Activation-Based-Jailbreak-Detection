@@ -109,3 +109,74 @@ def bootstrap_pair(points, labels, class_a, class_b, draws=1000, seed=0, keys=("
 		summary[f"{key}_se"] = float(array.std(ddof=1))
 	summary["draws_used"] = int(len(collected[keys[0]]))
 	return summary
+
+
+# Total variance of a point set. tr(Cov) is the sum of the per-dimension variances, so the
+# off-diagonal covariances the full matrix computes are discarded work -- identical result,
+# and it is the inner loop of every permutation below.
+def total_variance(points: np.ndarray) -> float:
+	return float(np.var(points, axis=0, ddof=1).sum())
+
+
+# Scale-free spread contrast between two classes: Delta = log(tr S_a / tr S_b).
+def log_trace_ratio(points: np.ndarray, labels: np.ndarray, class_a: str, class_b: str) -> float:
+	return float(np.log(total_variance(points[labels == class_a])
+	                    / total_variance(points[labels == class_b])))
+
+
+# Null distribution of Delta under exchangeable class labels.
+#
+# The null being tested is that Refusal and Benign are interchangeable labels on the same
+# activations, so only those two classes are pooled and reshuffled -- Jailbreak rows are held
+# out entirely rather than mixed in, and the two class sizes are preserved, so the null differs
+# from the observed statistic in label assignment alone.
+#
+# The p-value uses the (1 + count) / (1 + draws) form. Dividing by draws alone can return
+# exactly zero, which would assert a precision the resampling does not have; this form floors
+# p at 1/(1+draws) and is the honest statement of "no null draw reached the observed value".
+def permutation_delta(points, labels, class_a, class_b, draws=1000, seed=0) -> dict:
+	rng = np.random.default_rng(seed)
+	observed = log_trace_ratio(points, labels, class_a, class_b)
+
+	keep = np.isin(labels, [class_a, class_b])
+	pooled = points[keep]
+	n_a = int(np.sum(labels == class_a))
+
+	null = np.empty(draws)
+	for index in range(draws):
+		order = rng.permutation(len(pooled))
+		null[index] = float(np.log(total_variance(pooled[order[:n_a]])
+		                           / total_variance(pooled[order[n_a:]])))
+
+	extreme = int(np.sum(np.abs(null) >= abs(observed)))
+	spread = null.std(ddof=1)
+	return {
+		"delta": observed,
+		"null_mean": float(null.mean()),
+		"null_sd": float(spread),
+		"null_lo": float(np.percentile(null, 2.5)),
+		"null_hi": float(np.percentile(null, 97.5)),
+		"z_vs_null": float((observed - null.mean()) / spread) if spread > 0 else float("nan"),
+		"p_two_sided": float((1 + extreme) / (1 + draws)),
+		"p_floor": float(1.0 / (1 + draws)),
+		"draws": int(draws),
+	}
+
+
+# Percentile interval for Delta itself, resampling prompts within each class.
+def bootstrap_delta(points, labels, class_a, class_b, draws=1000, seed=0) -> dict:
+	rng = np.random.default_rng(seed)
+	index_a = np.flatnonzero(labels == class_a)
+	index_b = np.flatnonzero(labels == class_b)
+	values = np.empty(draws)
+	for index in range(draws):
+		draw_a = points[rng.choice(index_a, len(index_a), replace=True)]
+		draw_b = points[rng.choice(index_b, len(index_b), replace=True)]
+		values[index] = float(np.log(total_variance(draw_a) / total_variance(draw_b)))
+	return {
+		"delta_lo": float(np.percentile(values, 2.5)),
+		"delta_hi": float(np.percentile(values, 97.5)),
+		"delta_se": float(values.std(ddof=1)),
+		# The sign is the claim, so report how often the resampled statistic keeps it.
+		"sign_stability": float(np.mean(np.sign(values) == np.sign(values.mean()))),
+	}
