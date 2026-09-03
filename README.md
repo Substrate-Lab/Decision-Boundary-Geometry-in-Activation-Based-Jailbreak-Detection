@@ -1,6 +1,6 @@
 # Decision-Boundary Geometry in Activation-Based Jailbreak Detection
 
-Code and derived results for a study of the *shape* — not just the location — of refusal and
+Code and derived results for a study of the *shape*, not just the location, of refusal and
 compliance representations in instruction-tuned language models.
 
 ## Abstract
