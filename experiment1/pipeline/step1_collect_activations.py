@@ -11,7 +11,7 @@
 		torch (CUDA build), transformers, accelerate, bitsandbytes (for 4-bit),
 		numpy, pandas.
 
-	python step1_collect_activations.py --model C:/path/to/model
+	python step1_collect_activations.py --model /path/to/model
 	python step1_collect_activations.py --per-class 300 --harmful-pool 1500 --benign-pool 600
 	python step1_collect_activations.py --batch-size 8 --max-new-tokens 24 --safety-prompt
 """

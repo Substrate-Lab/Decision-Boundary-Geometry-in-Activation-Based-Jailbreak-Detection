@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Intrinsic sphere geometry: Karcher mean, log/exp maps, and three power distances.
 
-	§5.2's critical design note is the reason this module exists. A power diagram needs a
+	A power diagram needs a
 	Euclidean (or Bregman) structure -- a raw nested-polar vector cannot be fed to a squared
 	norm, because that adds squared radians to squared magnitudes. The curved arm therefore
 	outputs *tangent-space* coordinates via the log map at the Karcher mean, where Euclidean
@@ -20,7 +20,7 @@
 		                                Boundaries are exact hyperplanes *there*, which is what
 		                                keeps the convex-cell and signed-margin story intact.
 
-	Tangent-space distortion is measured, not assumed negligible (§9).
+	Tangent-space distortion is measured, not assumed negligible.
 """
 from __future__ import annotations
 

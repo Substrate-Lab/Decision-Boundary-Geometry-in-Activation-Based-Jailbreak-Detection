@@ -6,7 +6,7 @@
 	and the RMS gap between the method crossing and the reference crossing is the boundary error.
 	A global disagreement rate (method cell vs reference cell over the data) is also reported.
 
-	Caveat from §6.1 / §6.4: with model=qda and gmm-k=1 the method IS the reference (one Gaussian
+	Caveat: with model=qda and gmm-k=1 the method IS the reference (one Gaussian
 	per class), so the error is trivially near zero and measures the formula against itself. Those
 	rows are flagged degenerate rather than silently reported as a win.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Per-layer ROC-AUC shootout: geometry detectors vs a linear probe.
 
-	Step 1 of Experiment 3, and the core validating experiment (plan §7 caveat 2). For every layer
+	Step 1 of Experiment 3, and the core validating experiment. For every layer
 	it runs a stratified k-fold ROC-AUC of each detector on a binary detection task (default
 	Jailbreak vs Benign, the hard detection-relevant pair) and plots AUC against layer. The claim
 	to be tested is that the covariance-aware power diagram's advantage over the flat linear probe

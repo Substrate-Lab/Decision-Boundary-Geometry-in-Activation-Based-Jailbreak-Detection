@@ -1,6 +1,6 @@
 {
   "run_id": "20260823T145733Z",
-  "model_id": "C:\\Users\\ethan\\models\\Qwen2.5-3B-Instruct",
+  "model_id": "Qwen/Qwen2.5-3B-Instruct",
   "sample_per_class": 50,
   "load_in_4bit": true,
   "layers": [

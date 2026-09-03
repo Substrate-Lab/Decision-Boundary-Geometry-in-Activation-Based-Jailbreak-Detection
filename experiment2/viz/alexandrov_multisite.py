@@ -198,7 +198,7 @@ def main() -> int:
 	      f"{achieved:.4f} (experiment 1 reported {run['power_accuracy']:.4f})")
 	test_masses = np.full(len(test_points), 1.0 / len(test_points))
 
-	# Targets are the class priors (§5.3), spread across each class's sites by the shape
+	# Targets are the class priors, spread across each class's sites by the shape
 	# k-means found on train. Per-site targets therefore sum to the prior within every class.
 	prior = np.full(len(CLASS_NAMES), 1.0 / len(CLASS_NAMES))
 	targets = targets.astype(float).copy()

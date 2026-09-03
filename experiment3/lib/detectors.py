@@ -8,7 +8,7 @@
 	discriminants (qda, lda, power_single, power_multi) via a thin adapter: their two class scores
 	are turned into one positive-class score as score(negative) - score(positive).
 
-	The §6.1 point matters here: because the power methods use scalar weights they are genuinely
+	This matters here: because the power methods use scalar weights they are genuinely
 	distinct from the qda baseline, so "power vs qda" in the shootout is a real comparison, not a
 	formula against itself.
 """

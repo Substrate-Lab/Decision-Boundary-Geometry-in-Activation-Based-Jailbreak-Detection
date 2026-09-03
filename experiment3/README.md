@@ -11,8 +11,8 @@ These three steps run on the existing Qwen-3B collection (`experiment1/data`) on
 
 ```
 step1_auc_shootout.py   per-layer k-fold ROC-AUC of every detector on a binary task
-                        (default Jailbreak vs Benign). This is the plan §7 caveat-2 test:
-                        does the power diagram's edge over the linear probe widen at L24-34?
+                        (default Jailbreak vs Benign). Tests whether the power diagram's edge
+                        over the linear probe widens at L24-34.
 step2_cross_family.py   leave-one-source-dataset-out generalization; in-dist vs held-out AUC
                         and the drop per detector (the deployment condition)
 step3_fractal.py        covariance participation ratio D = trace(Sigma)^2/||Sigma||_F^2 per
@@ -22,15 +22,15 @@ step3_fractal.py        covariance participation ratio D = trace(Sigma)^2/||Sigm
 Detectors (`detectors.py`): `linear_probe`, `plain_voronoi`, `lda`, `qda`, `power_single`,
 `power_multi`. The geometry ones reuse Experiment 2's discriminants. Because the power methods use
 scalar weights they are genuinely distinct from `qda`, so "power vs qda" here is a real
-comparison, not the §6.1 formula-against-itself trap.
+comparison rather than the same formula measured against itself.
 
 The four source datasets (SORRY-Bench, WildJailbreak, ToxicChat, Aegis 2.0) each contribute
 Jailbreak and Benign rows, which is what makes the leave-one-out cross-family split possible.
 
 ## Needs new data collection (scaffold documents, does not fake)
 
-These parts of the plan §5 Experiment 3 are intentionally **not** implemented, because the data
-they need was not collected:
+These parts of the experiment are intentionally **not** implemented, because the data they need
+was not collected:
 
 - **Cross-model consistency** (Llama, Mistral vs Qwen; report AUC variance). Requires re-running
   `experiment1/step1_collect_activations.py` on each model (GPU). Once those runs exist, a thin
@@ -42,14 +42,13 @@ they need was not collected:
 - **Layer-stability / early-exit horizon** is read directly off the step-1 AUC-vs-layer curve
   (where AUC plateaus), so it is reported qualitatively from step 1 rather than as its own script.
 
-## Open decision this experiment informs
+## What this experiment settles
 
 The first Experiment 2 run found QDA beating the power diagram on accuracy in both raw and PNS
-space, and PNS *widening* rather than closing the gap (see `CLAUDE.local.md` §6 and the geometry
-decision memory). Step 1 here is the sharper test: AUC, per layer, probe vs geometry. If the power
-diagram never overtakes the linear probe at the horizon, that is strong evidence for owning the
-method as QDA-in-space (resolution 2) rather than as a power diagram. Report the curve to the PI
-before committing the framing.
+space, with PNS *widening* rather than closing the gap. Step 1 here is the sharper test: AUC, per
+layer, probe against geometry. If the power diagram never overtakes the linear probe at the
+horizon, that is evidence the method is better described as QDA in a chosen space than as a power
+diagram — which is why the boundary stays pluggable rather than asserted.
 
 ## Code layout
 

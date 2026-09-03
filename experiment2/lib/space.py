@@ -3,7 +3,7 @@
 
 	Experiment 2 reuses the activations collected in Experiment 1. Two working spaces are
 	supported: "rawpca" reduces the raw last-token activations with PCA, and "pns" loads the
-	Principal Nested Spheres scores written by Experiment 1 step 2. The §6 tension is that PNS
+	Principal Nested Spheres scores written by Experiment 1 step 2. The tension is that PNS
 	raises covariance similarity (shrinking the mismatch the boundary exploits), so both spaces
 	are kept selectable to measure the effect rather than assume one.
 """

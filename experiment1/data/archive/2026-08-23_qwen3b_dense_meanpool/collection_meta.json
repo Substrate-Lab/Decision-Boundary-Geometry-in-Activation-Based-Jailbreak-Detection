@@ -1,5 +1,5 @@
 {
-  "model_id": "C:\\Users\\ethan\\models\\Qwen2.5-3B-Instruct",
+  "model_id": "Qwen/Qwen2.5-3B-Instruct",
   "layers": [
     2,
     4,

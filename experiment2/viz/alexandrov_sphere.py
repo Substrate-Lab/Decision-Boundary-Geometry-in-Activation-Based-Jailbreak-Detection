@@ -3,7 +3,7 @@
 
 	Experiment 1's layer-30 norms sit within 1.6% of each other (Refusal 133.1, Jailbreak 131.0,
 	Benign 132.1) at spreads of 4-6%, so the three classes occupy nearly the same shell. That is
-	the hyperspherical premise of §3, and it is why the radial coordinate is a plausible thing to
+	the hyperspherical premise, and it is why the radial coordinate is a plausible thing to
 	discard: l2-normalising moves every activation onto the shell the classes already share.
 
 	On the sphere the power diagram is Sugihara's spherical Laguerre construction. With sites

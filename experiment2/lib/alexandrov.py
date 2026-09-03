@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Solved site weights for a Laguerre (power) diagram — the Alexandrov/Minkowski map.
 
-	Research plan v2 §5.3: weights are *solved*, not read off a covariance summary. Given sites
+	Weights are *solved*, not read off a covariance summary. Given sites
 	y_i and target cell masses nu_i, find the weight vector w such that each power cell carries
 	its prescribed mass:
 
@@ -25,7 +25,7 @@
 	stay exact hyperplanes, so the signed power distance remains a well-defined geometric margin.
 
 	Scalar weights are the point. Substituting per-class Sigma^-1 would make the boundary
-	quadratic and collapse the construction into QDA — see the plan's appendix.
+	quadratic and collapse the construction into QDA.
 
 	One limit is worth stating plainly, because it bounds every mass number these figures
 	report. With an empirical source measure a cell's mass is a sum of atoms of size 1/n, so a
@@ -113,7 +113,7 @@ def solve_weights(
 	)
 
 
-# Signed geometric margin: gap between the nearest and second-nearest power distances (§5.6).
+# Signed geometric margin: gap between the nearest and second-nearest power distances.
 def power_margin(points: np.ndarray, sites: np.ndarray, weights: np.ndarray):
 	power = squared_distances(points, sites) - weights[None, :]
 	order = np.argsort(power, axis=1)

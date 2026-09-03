@@ -13,8 +13,8 @@
 	Every cloud produced here is synthetic and labelled as such wherever it is drawn. It is
 	calibrated, not real: per-class norms and norm spreads are matched to the measured values,
 	the classes are placed as separated directions, and the tangential spread is set to hold a
-	prescribed radial share of the total variance. That makes the radial/tangential split of §3
-	an explicit knob, which is what the spherical arm is supposed to act on.
+	prescribed radial share of the total variance. That makes the radial/tangential split an
+	explicit knob, which is what the spherical arm is supposed to act on.
 """
 from __future__ import annotations
 
@@ -122,8 +122,7 @@ def norm_stats(layer: int, model: str | None = None) -> dict:
 
 # Raw and PNS covariance similarity at one layer. Measured by Experiment 1, not asserted:
 # PNS *raises* similarity at every layer, shrinking the very mismatch a covariance-aware
-# boundary exploits. That is an empirical result from layer_transition.csv; the draft-v1
-# plan has no section stating it (its §5.2 only lists PNS as one of the four arms).
+# boundary exploits. That is an empirical result from layer_transition.csv, not a prediction.
 def covariance_similarity(layer: int, model: str | None = None) -> dict:
 	_guard_csv_model(model)
 	frame = pd.read_csv(EXP1_DATA / "layer_transition.csv")

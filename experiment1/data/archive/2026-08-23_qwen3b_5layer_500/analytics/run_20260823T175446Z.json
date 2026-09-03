@@ -1,6 +1,6 @@
 {
   "run_id": "20260823T175446Z",
-  "model_id": "C:\\Users\\ethan\\models\\Qwen2.5-3B-Instruct",
+  "model_id": "Qwen/Qwen2.5-3B-Instruct",
   "per_class_target": 500,
   "balanced_per_class": 500,
   "safety_prompt": false,

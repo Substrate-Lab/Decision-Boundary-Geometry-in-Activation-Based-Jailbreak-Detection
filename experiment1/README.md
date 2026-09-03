@@ -60,11 +60,16 @@ previous step's output and writes its own.
 
 ### Step 1 — Collect activations
 
-**What:** We run an instruction-tuned LLM (default
-`meta-llama/Llama-3.1-8B-Instruct`) on a balanced sample of prompts, let it
-generate a response, detect whether it refused, and assign one of the three
+**What:** We run an instruction-tuned LLM on a balanced sample of prompts, let
+it generate a response, detect whether it refused, and assign one of the three
 classes above. For each prompt we save the last-token residual-stream
-activation — the model's internal state — at layers **1, 8, 16, 24, and 32**.
+activation — the model's internal state — at a chosen set of layers.
+
+The script's built-in defaults are `meta-llama/Llama-3.1-8B-Instruct` at layers
+`1, 8, 16, 24, 32` with 300 per class. **The committed data was not collected
+with those defaults**: it is `Qwen/Qwen2.5-3B-Instruct` at layers `2–36` (stride
+2) with 500 per class, passed explicitly via `--model`, `--layers` and
+`--per-class`. Pass them explicitly to reproduce it.
 
 **Why:** Sampling several layers lets us watch the geometry form. Early layers
 carry surface features; middle and late layers carry the model's "intent."
@@ -113,7 +118,6 @@ experiment1/
   pipeline/     the ordered, data-producing steps (step1 -> step2 -> step3)
   analysis/     per-layer metrics and diagnostics (covariance similarity, probe accuracy)
   viz/          figure generators (power diagram, t-SNE, covariance ellipsoids)
-  notes/        written-up findings (the layer-study retrospective)
   data/         generated outputs (gitignored)
   figures/      generated figures (gitignored)
 ```
@@ -138,10 +142,10 @@ Useful flags:
 
 | Flag | Purpose |
 |------|---------|
-| `--model` | Choose the LLM (default `meta-llama/Llama-3.1-8B-Instruct`). |
-| `--sample-per-class` | How many prompts to collect per class. |
+| `--model` | Choose the LLM (script default `meta-llama/Llama-3.1-8B-Instruct`; the committed run used `Qwen/Qwen2.5-3B-Instruct`). |
+| `--per-class` | Final balanced size per class (script default 300; the committed run used 500). |
 | `--no-4bit` | Disable 4-bit quantization (use full/bf16 weights). |
-| `--layers` | Which layers to record (default `1 8 16 24 32`). |
+| `--layers` | Which layers to record (script default `1 8 16 24 32`; the committed run used `2–36` at stride 2). |
 | `--pca-dims` | PCA dimensionality before projecting to the sphere. |
 
 ## Requirements and hardware notes

@@ -6,7 +6,7 @@ directly and adds nothing to the GPU collection step.
 
 ## The open decision this scaffold keeps live
 
-The research plan flags an unresolved tension (§6.1): the full-covariance discriminant
+One tension in the method is left deliberately unresolved: the full-covariance discriminant
 `P_i(x) = (x - μ_i)ᵀ Σ_i⁻¹ (x - μ_i) + log det Σ_i` is exactly **QDA**, not a power diagram. If
 adopted as the method, the "exact hyperplane / convex cell / clean power margin" story is lost,
 the Alexandrov optimal-transport guarantee no longer applies, and the method collapses into its
@@ -14,26 +14,25 @@ own Experiment 3 baseline.
 
 So the boundary is **pluggable**, not hardcoded, in `discriminants.py`:
 
-| model          | boundary        | is it a power diagram?          | plan resolution |
-|----------------|-----------------|---------------------------------|-----------------|
-| `lda`          | linear          | no (shared-covariance baseline) | baseline        |
-| `power_single` | linear          | yes, single-site Laguerre       | resolution 1    |
-| `power_multi`  | piecewise-linear| yes, multi-site Laguerre        | resolution 3 (recommended) |
-| `qda`          | quadric         | **no — this is QDA**            | resolution 2    |
+| model          | boundary         | is it a power diagram?          |
+|----------------|------------------|---------------------------------|
+| `lda`          | linear           | no (shared-covariance baseline) |
+| `power_single` | linear           | yes, single-site Laguerre       |
+| `power_multi`  | piecewise-linear | yes, multi-site Laguerre        |
+| `qda`          | quadric          | **no — this is QDA**            |
 
 The default across the steps is `power_multi`. `qda` is included so the comparison can be made
-empirically, but it is labelled QDA everywhere and never presented as "our power diagram." The
-PI decision on which to headline is still pending — see `CLAUDE.local.md` §6.
+empirically, but it is labelled QDA everywhere and never presented as a power diagram.
 
 ## What is implemented vs deferred
 
-- Covariances use **Ledoit-Wolf shrinkage** so `Σ⁻¹` and `log det Σ` stay defined at small n (§6.2).
+- Covariances use **Ledoit-Wolf shrinkage** so `Σ⁻¹` and `log det Σ` stay defined at small n.
 - Both working spaces are selectable: `rawpca` (raw activations, PCA-reduced) and `pns`
   (Experiment 1 step-2 PNS scores). PNS is kept optional because it *raises* covariance
-  similarity and so shrinks the mismatch the boundary exploits (§6.3 / §7 caveat 3).
-- The **fractal z-state** (cross-layer trajectory, §6.3) is **not** operationalized here; each
+  similarity and so shrinks the mismatch the boundary exploits.
+- The **fractal z-state** (cross-layer trajectory) is **not** operationalized here; each
   step works in a single layer's space. Treat it as out of scope for this scaffold.
-- Per-layer AUC vs baselines (the "does the method actually win" test, §7 caveat 2) belongs to
+- Per-layer AUC vs baselines (the "does the method actually win" test) belongs to
   Experiment 3 and is **not** built here.
 
 ## Pipeline

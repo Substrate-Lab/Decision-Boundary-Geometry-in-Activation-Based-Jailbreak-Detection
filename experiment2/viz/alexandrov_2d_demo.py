@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A 2D, CPU-fast picture of the Alexandrov weight solve.
 
-	Purpose: make the §5.3 weight solve visible before it is trusted in 2048 dimensions. Three
+	Purpose: make the weight solve visible before it is trusted in 2048 dimensions. Three
 	synthetic classes stand in for the real ones and reproduce the covariance mismatch the paper
 	is built on — Refusal tight and stereotyped, Jailbreak diffuse and elongated across attack
 	styles, Benign in between. Sites are the class centroids; targets are the true class priors.
@@ -14,7 +14,7 @@
 		             the boundaries are still exact hyperplanes.
 
 	The visible gap between the panels is the "tight class encroaches on the diffuse one"
-	failure of §4 — a systematic, directional error, not noise.
+	failure mode — a systematic, directional error, not noise.
 
 	Usage:
 		.venv/bin/python experiment2/viz/alexandrov_2d_demo.py
@@ -46,7 +46,7 @@ TEXT_SECONDARY = "#52514e"
 SEED = 0
 
 
-# Three Gaussian classes with deliberately mismatched covariance, mirroring §3's hypothesis.
+# Three Gaussian classes with deliberately mismatched covariance, mirroring the hypothesis.
 def synthetic_classes(n_per_class: int):
 	rng = np.random.default_rng(SEED)
 	means = np.array([[0.0, 0.0], [3.2, 0.9], [-0.4, 3.4]])

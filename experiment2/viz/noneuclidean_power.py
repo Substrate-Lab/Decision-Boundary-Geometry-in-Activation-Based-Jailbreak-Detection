@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """When does curvature actually move the power-diagram boundary?
 
-	The independent variable of §5.2 is the coordinate system, so the comparison holds everything
+	The independent variable is the coordinate system, so the comparison holds everything
 	else fixed -- same points, same 36 sites, same class-prior targets, same Alexandrov weight
 	solve -- and varies only the distance the diagram is built from:
 
@@ -9,7 +9,7 @@
 		                             control: still a Euclidean diagram, drawn on a curved set.
 		geodesic  arccos(x.y)^2 - w  intrinsic, genuinely non-Euclidean.
 		tangent   ||u-v||^2 - w      Euclidean in log-map coordinates at the Karcher mean --
-		                             the §5.2 route that keeps boundaries exact hyperplanes.
+		                             the route that keeps boundaries exact hyperplanes.
 
 	Chordal and geodesic coincide at w = 0 (both monotone in x.y); only solved weights separate
 	them, because the weight enters on a different scale in each.

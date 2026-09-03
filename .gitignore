@@ -1,6 +1,3 @@
-# Local Claude context / private notes — never commit
-CLAUDE.local.md
-
 # Python virtual environment and caches — never commit
 .venv/
 venv/

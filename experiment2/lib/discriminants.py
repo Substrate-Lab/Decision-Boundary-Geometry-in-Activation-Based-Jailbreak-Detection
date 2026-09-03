@@ -3,19 +3,19 @@
 
 	Each discriminant fits per-class statistics in a working space and returns, for any set of
 	points, a score per class where the smallest score wins the cell. Four models are offered so
-	the open §6.1 decision (is the covariance-aware form a real power diagram or just QDA?) can
+	the open question (is the covariance-aware form a real power diagram or just QDA?) can
 	be tested empirically instead of hardcoded:
 
 		lda          - shared pooled covariance, linear boundary (baseline).
 		power_single - one scalar-weighted site per class, w = trace(Sigma); flat boundary,
-		               a true single-site Laguerre power diagram (resolution 1).
+		               a true single-site Laguerre power diagram.
 		power_multi  - many k-means sub-sites per class, scalar weights; piecewise-linear
-		               boundary that stays a real power diagram (resolution 3, recommended).
+		               boundary that stays a real power diagram (the default).
 		qda          - full per-class covariance, quadric boundary. This is exactly QDA / the
 		               Gaussian log-likelihood discriminant, NOT a power diagram (see README).
 
 	Covariances use Ledoit-Wolf shrinkage so the inverse and log-determinant stay defined when a
-	class has few points relative to the dimension (§6.2).
+	class has few points relative to the dimension.
 """
 from __future__ import annotations
 
@@ -88,7 +88,7 @@ class LdaDiscriminant(Discriminant):
 		return np.column_stack(columns)
 
 
-# Full per-class covariance discriminant: this is QDA, kept as an explicit baseline (§6.1).
+# Full per-class covariance discriminant: this is QDA, kept as an explicit baseline.
 class QdaDiscriminant(Discriminant):
 	# Fit each class mean, shrunk precision, and log-determinant.
 	def fit(self, points: np.ndarray, labels: np.ndarray) -> "QdaDiscriminant":
@@ -141,7 +141,7 @@ class PowerSingleDiscriminant(Discriminant):
 		return np.column_stack(columns)
 
 
-# Many scalar-weighted sub-sites per class: a piecewise-linear power diagram (resolution 3).
+# Many scalar-weighted sub-sites per class: a piecewise-linear power diagram.
 class PowerMultiDiscriminant(Discriminant):
 	# Split each class into k-means sub-sites, each weighted by the trace of its sub-covariance.
 	def __init__(self, sites_per_class: int = 12):
